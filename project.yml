@@ -1,0 +1,58 @@
+name: MagicWall
+options:
+  bundleIdPrefix: app.magicwall
+  deploymentTarget:
+    macOS: "15.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    SWIFT_STRICT_CONCURRENCY: minimal
+    DEAD_CODE_STRIPPING: YES
+    ENABLE_HARDENED_RUNTIME: NO
+packages:
+  MagicWallCore:
+    path: Packages/MagicWallCore
+targets:
+  MagicWall:
+    type: application
+    platform: macOS
+    deploymentTarget: "15.0"
+    sources:
+      - path: MagicWall
+    dependencies:
+      - package: MagicWallCore
+        product: MagicWallCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.magicwall
+        PRODUCT_NAME: MagicWall
+        CODE_SIGN_STYLE: Manual
+        CODE_SIGN_IDENTITY: "-"
+        DEVELOPMENT_TEAM: ""
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        COMBINE_HIDPI_IMAGES: YES
+    info:
+      path: MagicWall/Info.plist
+      properties:
+        CFBundleDisplayName: MagicWall
+        CFBundleShortVersionString: "0.1.0"
+        CFBundleVersion: "1"
+        LSMinimumSystemVersion: "15.0"
+        LSApplicationCategoryType: public.app-category.utilities
+        NSHumanReadableCopyright: "MagicWall"
+        NSHighResolutionCapable: true
+        CFBundleURLTypes:
+          - CFBundleURLName: app.magicwall.deeplink
+            CFBundleTypeRole: Editor
+            CFBundleURLSchemes: [magicwall]
+schemes:
+  MagicWall:
+    build:
+      targets:
+        MagicWall: all
+    run:
+      config: Debug
+    archive:
+      config: Release

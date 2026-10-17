@@ -1,0 +1,14 @@
+# Xcode / build artifacts
+.build/
+DerivedData/
+*.xcodeproj
+!project.yml
+xcuserdata/
+*.xcworkspace
+.build-*
+
+# macOS
+.DS_Store
+
+# Dev fixtures (generated test media)
+DevFixtures/
