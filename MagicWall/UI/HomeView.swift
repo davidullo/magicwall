@@ -1,7 +1,7 @@
 import MagicWallCore
 import SwiftUI
 
-/// Netflix-style landing page: hero banner plus horizontal shelves.
+/// Landing page: hero banner plus horizontal shelves.
 struct HomeView: View {
     let videos: [Video]
     let membership: [String: Set<Int64>]
@@ -18,6 +18,7 @@ struct HomeView: View {
                 LazyVStack(alignment: .leading, spacing: 30) {
                     if let hero = heroVideo {
                         HeroBanner(video: hero, onOpen: { onOpen(hero) })
+                            .accessibilityIdentifier("home.hero")
                     }
 
                     ForEach(shelves) { shelf in
@@ -60,15 +61,15 @@ struct HomeView: View {
 
         result.append(HomeShelf(
             id: "recent",
-            title: "Aggiunti di recente",
-            subtitle: "\(recent.count) video",
+            title: L("home.shelf.recent"),
+            subtitle: videoCountLabel(recent.count),
             videos: recent
         ))
 
         if !continueWatching.isEmpty {
             result.append(HomeShelf(
                 id: "continue",
-                title: "Continua a guardare",
+                title: L("home.shelf.continue"),
                 subtitle: nil,
                 videos: continueWatching
             ))
@@ -77,7 +78,7 @@ struct HomeView: View {
         if !favorites.isEmpty {
             result.append(HomeShelf(
                 id: "favorites",
-                title: "Preferiti",
+                title: L("tab.favorites"),
                 subtitle: "\(favorites.count)",
                 videos: favorites
             ))
@@ -114,6 +115,7 @@ private struct HeroBanner: View {
     let video: Video
     let onOpen: () -> Void
 
+    @EnvironmentObject private var theme: ThemeStore
     @EnvironmentObject private var viewModel: LibraryViewModel
     @EnvironmentObject private var engine: WallpaperEngine
 
@@ -123,8 +125,8 @@ private struct HeroBanner: View {
     var body: some View {
         ZStack(alignment: .bottomLeading) {
             backdrop
-            MagicWallTheme.heroScrim
-            horizontalScrim
+            theme.active.heroScrim
+            theme.active.heroHorizontalScrim
 
             VStack(alignment: .leading, spacing: 14) {
                 eyebrow
@@ -132,10 +134,10 @@ private struct HeroBanner: View {
                 badges
                 actions
             }
-            .padding(.horizontal, MagicWallTheme.gutter)
+            .padding(.horizontal, MagicWallLayout.gutter)
             .padding(.bottom, 34)
         }
-        .frame(height: MagicWallTheme.heroHeight)
+        .frame(height: MagicWallLayout.heroHeight)
         .frame(maxWidth: .infinity)
         .clipped()
     }
@@ -143,23 +145,15 @@ private struct HeroBanner: View {
     private var backdrop: some View {
         PosterImageView(url: video.posterURL, fallbackTitle: video.title)
             .frame(maxWidth: .infinity)
-            .frame(height: MagicWallTheme.heroHeight)
-    }
-
-    private var horizontalScrim: some View {
-        LinearGradient(
-            colors: [MagicWallTheme.background.opacity(0.92), MagicWallTheme.background.opacity(0.0)],
-            startPoint: .leading,
-            endPoint: .trailing
-        )
+            .frame(height: MagicWallLayout.heroHeight)
     }
 
     private var eyebrow: some View {
         HStack(spacing: 8) {
-            Text("IN EVIDENZA")
+            Text(L("home.hero.featured"))
                 .font(.system(size: 10, weight: .heavy))
                 .tracking(1.6)
-                .foregroundStyle(.white.opacity(0.7))
+                .foregroundStyle(theme.active.textSecondaryColor)
             if isLive {
                 LiveBadge()
             }
@@ -168,8 +162,8 @@ private struct HeroBanner: View {
 
     private var title: some View {
         Text(video.title)
-            .font(.system(size: 42, weight: .bold, design: .rounded))
-            .foregroundStyle(.white)
+            .font(.system(size: 42, weight: theme.active.titleFontWeight, design: .rounded))
+            .foregroundStyle(theme.active.textPrimaryColor)
             .lineLimit(2)
             .multilineTextAlignment(.leading)
             .shadow(color: .black.opacity(0.45), radius: 12, y: 4)
@@ -198,14 +192,14 @@ private struct HeroBanner: View {
 
     private var actions: some View {
         HStack(spacing: 12) {
-            GradientActionButton(
-                title: "Riproduci come wallpaper",
+            PrimaryActionButton(
+                title: L("home.hero.play"),
                 systemImage: "play.fill"
             ) {
                 viewModel.applyToAllScreens(video)
             }
 
-            TintedActionButton(title: "Anteprima", systemImage: "rectangle.inset.filled.and.person.filled") {
+            SecondaryActionButton(title: L("home.hero.preview"), systemImage: "rectangle.inset.filled.and.person.filled") {
                 onOpen()
             }
 
@@ -214,13 +208,12 @@ private struct HeroBanner: View {
             } label: {
                 Image(systemName: isFavorite ? "heart.fill" : "heart")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(isFavorite ? Color(red: 1, green: 0.28, blue: 0.42) : .white)
+                    .foregroundStyle(isFavorite ? theme.active.accentColor : theme.active.textPrimaryColor)
                     .frame(width: 38, height: 38)
-                    .background(Color.white.opacity(0.14), in: Circle())
-                    .overlay(Circle().strokeBorder(.white.opacity(0.16), lineWidth: 1))
+                    .background(theme.active.buttonSecondaryBackgroundColor, in: Circle())
             }
             .buttonStyle(PressableButtonStyle())
-            .help(isFavorite ? "Rimuovi dai preferiti" : "Aggiungi ai preferiti")
+            .help(isFavorite ? L("card.favorite.remove") : L("card.favorite.add"))
             .animation(.easeOut(duration: 0.12), value: isFavorite)
         }
         .padding(.top, 4)

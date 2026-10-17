@@ -12,7 +12,7 @@ struct MenuBarMenuView: View {
     @EnvironmentObject private var engine: WallpaperEngine
 
     var body: some View {
-        Button("Apri MagicWall") {
+        Button(L("menubar.open")) {
             openMainWindow()
         }
 
@@ -28,25 +28,25 @@ struct MenuBarMenuView: View {
 
         favoritesMenu
 
-        Button("Prossimo casuale") {
+        Button(L("menubar.nextRandom")) {
             viewModel.applyRandomToAllScreens()
         }
         .disabled(viewModel.videos.isEmpty)
 
-        Button("Importa video…") {
+        Button(L("common.importVideosEllipsis")) {
             viewModel.presentImportPanel()
         }
         .disabled(viewModel.isImporting)
 
         if engine.hasActiveWallpaper {
-            Button("Ferma wallpaper") {
+            Button(L("menubar.stop")) {
                 engine.clearAll()
             }
         }
 
         Divider()
 
-        Button("Esci") {
+        Button(L("menubar.quit")) {
             NSApp.terminate(nil)
         }
     }
@@ -56,7 +56,7 @@ struct MenuBarMenuView: View {
     @ViewBuilder
     private var screenStatusSection: some View {
         if engine.statuses.isEmpty {
-            Text("Nessun display rilevato")
+            Text(L("menubar.noDisplay"))
         } else {
             ForEach(engine.statuses) { status in
                 Text(statusLine(status))
@@ -66,17 +66,17 @@ struct MenuBarMenuView: View {
 
     @ViewBuilder
     private var playbackToggles: some View {
-        Toggle("Pausa wallpaper", isOn: $engine.isPaused)
-        Toggle("Pausa su batteria", isOn: $engine.pauseOnBattery)
-        Toggle("Pausa con desktop nascosto", isOn: $engine.pauseWhenOccluded)
+        Toggle(L("playback.pause.wallpapers"), isOn: $engine.isPaused)
+        Toggle(L("playback.pause.battery"), isOn: $engine.pauseOnBattery)
+        Toggle(L("playback.pause.occluded"), isOn: $engine.pauseWhenOccluded)
     }
 
     @ViewBuilder
     private var favoritesMenu: some View {
         let favorites = favoriteVideos
-        Menu("Applica preferito") {
+        Menu(L("menubar.favorites.apply")) {
             if favorites.isEmpty {
-                Text("Nessun preferito")
+                Text(L("menubar.favorites.empty"))
             } else {
                 ForEach(favorites) { video in
                     Button(video.title) {
@@ -103,7 +103,7 @@ struct MenuBarMenuView: View {
         if let title = status.videoTitle {
             return "\(status.name): \(title)"
         }
-        return "\(status.name): nessun wallpaper"
+        return L("menubar.status.none", status.name)
     }
 
     /// Brings the library window to the front, activating the app first.

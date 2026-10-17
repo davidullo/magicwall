@@ -43,7 +43,7 @@ final class LoginItemService: ObservableObject {
         // (e.g. launched from a location macOS does not persist). Everything
         // else is a normal state and does not need an error message.
         if status == .notFound, lastError == nil {
-            lastError = "MagicWall non può registrarsi come elemento di login da questa posizione. Sposta l’app in /Applications e riprova."
+            lastError = L("login.error.notFound")
         }
     }
 
@@ -88,10 +88,10 @@ final class LoginItemService: ObservableObject {
     }
 
     private func failureMessage(for error: Error, enabling: Bool) -> String {
-        let verb = enabling ? "attivare" : "disattivare"
         // A local, ad-hoc signed build cannot register a login item, and the
         // error domain/code is not stable enough to special-case. Instead we
         // always point at the manual fallback, which works in every case.
-        return "Impossibile \(verb) l’avvio automatico: \(error.localizedDescription). Se il problema persiste, aggiungi MagicWall manualmente da Impostazioni di Sistema → Generali → Elementi login."
+        let key = enabling ? "login.error.enable" : "login.error.disable"
+        return L(key, error.localizedDescription)
     }
 }

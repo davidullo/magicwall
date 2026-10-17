@@ -89,7 +89,39 @@ chiave `display:<CGDirectDisplayID>`) e ripristinati a ogni avvio.
     └── Posters/<uuid>.jpg
 ```
 
+## Test
+
+Core (unità): 
+
+```bash
+cd Packages/MagicWallCore
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
+```
+
+E2E UI (XCUITest, apre e pilota l'app reale):
+
+```bash
+./Scripts/e2e.sh                                       # tutta la suite E2E
+./Scripts/e2e.sh -only-testing:MagicWallUITests/MagicWallUITests/testTabNavigationSwitchesContent
+```
+
+Copre: sidebar completa, navigazione tra tab, regressione "preview sopra la
+sidebar" (il click sulla sidebar sotto la preview non naviga e chiude la
+preview), chiusura preview con X ed Esc, apertura Impostazioni con tab Theme.
+
+Note:
+- al primo giro macOS può chiedere il permesso di **Accessibility**/Automation
+  per Xcode/terminal: va concesso per far girare i click sintetici;
+- su macOS i test usano `click()` (non `tap()`);
+- i test preview richiedono libreria non vuota (importa i fixture con `mwctl`);
+- log completo in `/tmp/mw-e2e.log`.
+
 ## Dev tools
 
 - `DevTools/make-test-video.swift` — genera un video di test animato:
   `swift DevTools/make-test-video.swift DevFixtures/test-pattern.mp4`
+- `DevTools/4k-harvest/harvest_stock-footage.py` — raccoglie clip 4K libere da stock-footage
+  (candidates.json + manifest ffprobe + contact sheet + HEVC), per testare
+  l'app con footage reale. Vedi `DevTools/4k-harvest/README.md`.
+- `DevTools/another-app-parity/download.sh` — catalogo + downloader dei video
+  dell'app another app (parity libreria). Vedi `DevTools/another-app-parity/README.md`.

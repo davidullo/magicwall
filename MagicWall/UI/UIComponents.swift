@@ -28,7 +28,13 @@ func applyWallpaper(
 ) {
     guard let screen = NSScreen.screens.first(where: { $0.magicWallKey == key }) else { return }
     engine.apply(video, to: screen)
-    viewModel.statusMessage = "“\(video.title)” applicato su \(screen.magicWallName)."
+    viewModel.statusMessage = L("video.status.playingOnScreen", video.title, screen.magicWallName)
+}
+
+/// Localized count phrase for videos, e.g. "3 videos" / "3 video".
+@MainActor
+func videoCountLabel(_ count: Int) -> String {
+    count == 1 ? L("common.videoCount.one", count) : L("common.videoCount.other", count)
 }
 
 // MARK: - Poster
@@ -54,6 +60,8 @@ struct MetadataBadge: View {
     let icon: String
     let text: String
 
+    @EnvironmentObject private var theme: ThemeStore
+
     var body: some View {
         HStack(spacing: 5) {
             Image(systemName: icon)
@@ -63,95 +71,74 @@ struct MetadataBadge: View {
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
-        .foregroundStyle(.white.opacity(0.92))
-        .background(Color.white.opacity(0.12), in: Capsule())
-        .overlay(Capsule().strokeBorder(Color.white.opacity(0.10), lineWidth: 1))
+        .foregroundStyle(theme.active.badgeTextColor)
+        .background(theme.active.badgeBackgroundColor, in: Capsule())
     }
 }
 
 struct LiveBadge: View {
     var compact = false
 
+    @EnvironmentObject private var theme: ThemeStore
+
     var body: some View {
         HStack(spacing: 5) {
             Circle()
-                .fill(.white)
+                .fill(theme.active.liveBadgeTextColor)
                 .frame(width: 5, height: 5)
-            Text(compact ? "LIVE" : "IN ONDA")
+            Text(L("common.live"))
                 .font(.system(size: compact ? 9 : 10, weight: .heavy))
                 .tracking(0.4)
         }
         .padding(.horizontal, 7)
         .padding(.vertical, 3)
-        .foregroundStyle(.white)
-        .background(MagicWallTheme.live, in: Capsule())
+        .foregroundStyle(theme.active.liveBadgeTextColor)
+        .background(theme.active.liveBadgeBackgroundColor, in: Capsule())
     }
 }
 
-/// Filled gradient call-to-action button.
-struct GradientActionButton: View {
+/// Primary call-to-action: flat accent fill by default, gradient only when the
+/// active theme enables it.
+struct PrimaryActionButton: View {
     let title: String
     let systemImage: String
     var compact = false
     let action: () -> Void
 
+    @EnvironmentObject private var theme: ThemeStore
+
     var body: some View {
         Button(action: action) {
             Label(title, systemImage: systemImage)
-                .font(.system(size: compact ? 12 : 14, weight: .semibold))
+                .font(.system(size: compact ? 12 : 13.5, weight: .bold))
                 .padding(.horizontal, compact ? 13 : 20)
-                .padding(.vertical, compact ? 7 : 11)
-                .foregroundStyle(.white)
-                .background(MagicWallTheme.accentGradient, in: Capsule())
+                .padding(.vertical, compact ? 7 : 10)
+                .foregroundStyle(theme.active.accentTextColor)
+                .background(theme.active.accentShapeStyle, in: Capsule())
         }
         .buttonStyle(PressableButtonStyle())
     }
 }
 
-/// Tinted secondary button used next to `GradientActionButton`.
-struct TintedActionButton: View {
+/// Secondary button (soft surface fill) used next to `PrimaryActionButton`.
+struct SecondaryActionButton: View {
     let title: String
     let systemImage: String
     var compact = false
     let action: () -> Void
 
+    @EnvironmentObject private var theme: ThemeStore
+
     var body: some View {
         Button(action: action) {
             Label(title, systemImage: systemImage)
-                .font(.system(size: compact ? 12 : 14, weight: .semibold))
+                .font(.system(size: compact ? 12 : 13.5, weight: .semibold))
                 .padding(.horizontal, compact ? 12 : 18)
-                .padding(.vertical, compact ? 7 : 11)
-                .foregroundStyle(.white.opacity(0.95))
-                .background(Color.white.opacity(0.14), in: Capsule())
-                .overlay(Capsule().strokeBorder(Color.white.opacity(0.14), lineWidth: 1))
+                .padding(.vertical, compact ? 7 : 10)
+                .foregroundStyle(theme.active.buttonSecondaryTextColor)
+                .background(theme.active.buttonSecondaryBackgroundColor, in: Capsule())
         }
         .buttonStyle(PressableButtonStyle())
-    }
-}
-
-/// Small circular icon button for top bars and overlay chrome.
-struct CircleIconButton: View {
-    let systemImage: String
-    var size: CGFloat = 30
-    var tint: Color = .white
-    var background: Color = Color.white.opacity(0.12)
-    var help: String?
-    let action: () -> Void
-
-    @State private var isHovering = false
-
-    var body: some View {
-        Button(action: action) {
-            Image(systemName: systemImage)
-                .font(.system(size: size * 0.42, weight: .semibold))
-                .foregroundStyle(tint)
-                .frame(width: size, height: size)
-                .background(isHovering ? background.opacity(1.4) : background, in: Circle())
-                .overlay(Circle().strokeBorder(Color.white.opacity(0.10), lineWidth: 1))
-        }
-        .buttonStyle(PressableButtonStyle())
-        .onHover { isHovering = $0 }
-        .help(help ?? "")
     }
 }
 
@@ -169,15 +156,17 @@ struct SectionHeader: View {
     var subtitle: String?
     var trailing: AnyView?
 
+    @EnvironmentObject private var theme: ThemeStore
+
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 10) {
             Text(title)
-                .font(.system(size: 21, weight: .bold, design: .rounded))
-                .foregroundStyle(.white)
+                .font(.system(size: 21, weight: theme.active.titleFontWeight))
+                .foregroundStyle(theme.active.textPrimaryColor)
             if let subtitle {
                 Text(subtitle)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(theme.active.textSecondaryColor)
             }
             Spacer(minLength: 8)
             if let trailing {
@@ -187,28 +176,60 @@ struct SectionHeader: View {
     }
 }
 
+/// Compact surface button used by section headers ("New category", "Shuffle").
+struct HeaderActionButton: View {
+    let title: String
+    let systemImage: String
+    var isEnabled = true
+    let action: () -> Void
+
+    @EnvironmentObject private var theme: ThemeStore
+    @State private var isHovering = false
+
+    var body: some View {
+        Button(action: action) {
+            Label(title, systemImage: systemImage)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(theme.active.buttonSecondaryTextColor)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 7)
+                .background(
+                    isHovering ? theme.active.surfaceHoverColor : theme.active.buttonSecondaryBackgroundColor,
+                    in: Capsule()
+                )
+        }
+        .buttonStyle(PressableButtonStyle())
+        .disabled(!isEnabled)
+        .opacity(isEnabled ? 1 : 0.5)
+        .onHover { isHovering = $0 }
+    }
+}
+
 // MARK: - Empty states
 
 struct EmptyLibraryState: View {
     let onImport: () -> Void
 
+    @EnvironmentObject private var theme: ThemeStore
+
     var body: some View {
         VStack(spacing: 16) {
             ZStack {
                 Circle()
-                    .fill(MagicWallTheme.accent.opacity(0.14))
+                    .fill(theme.active.accentColor.opacity(0.14))
                     .frame(width: 96, height: 96)
                 Image(systemName: "sparkles.tv")
                     .font(.system(size: 38, weight: .semibold))
-                    .foregroundStyle(MagicWallTheme.accentGradient)
+                    .foregroundStyle(theme.active.accentColor)
             }
-            Text("La tua libreria è vuota")
-                .font(.system(size: 22, weight: .bold, design: .rounded))
-            Text("Trascina qui i tuoi video MP4/MOV oppure importali\ne scegli il wallpaper che animerà il desktop.")
+            Text(L("empty.library.title"))
+                .font(.system(size: 22, weight: theme.active.titleFontWeight))
+                .foregroundStyle(theme.active.textPrimaryColor)
+            Text(L("empty.library.message"))
                 .font(.callout)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(theme.active.textSecondaryColor)
                 .multilineTextAlignment(.center)
-            GradientActionButton(title: "Importa video", systemImage: "plus", action: onImport)
+            PrimaryActionButton(title: L("common.importVideos"), systemImage: "plus", action: onImport)
                 .padding(.top, 4)
         }
         .frame(maxWidth: .infinity)
@@ -221,16 +242,19 @@ struct MessageState: View {
     let title: String
     let message: String
 
+    @EnvironmentObject private var theme: ThemeStore
+
     var body: some View {
         VStack(spacing: 10) {
             Image(systemName: icon)
                 .font(.system(size: 34, weight: .medium))
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(theme.active.textTertiaryColor)
             Text(title)
-                .font(.system(size: 18, weight: .semibold, design: .rounded))
+                .font(.system(size: 18, weight: theme.active.titleFontWeight))
+                .foregroundStyle(theme.active.textPrimaryColor)
             Text(message)
                 .font(.callout)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(theme.active.textSecondaryColor)
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
@@ -265,9 +289,9 @@ struct CategoriesMenu: View {
     let actions: VideoMenuActions
 
     var body: some View {
-        Menu("Categorie") {
+        Menu(L("category.menu")) {
             if items.isEmpty {
-                Text("Nessuna categoria")
+                Text(L("category.none"))
             }
             ForEach(items) { item in
                 Toggle(item.name, isOn: Binding(
@@ -276,9 +300,9 @@ struct CategoriesMenu: View {
                 ))
             }
             Divider()
-            Button("Nuova categoria…", action: actions.newCategory)
+            Button(L("category.newEllipsis"), action: actions.newCategory)
             if !items.isEmpty {
-                Menu("Elimina categoria") {
+                Menu(L("category.delete")) {
                     ForEach(items) { item in
                         Button(item.name, role: .destructive) {
                             actions.deleteCategory(item.id)
@@ -298,9 +322,9 @@ struct VideoContextMenu: View {
     let actions: VideoMenuActions
 
     var body: some View {
-        Button("Riproduci come wallpaper", action: actions.applyToAll)
+        Button(L("video.play"), action: actions.applyToAll)
         if statuses.count > 1 {
-            Menu("Applica su schermo") {
+            Menu(L("video.applyToScreen")) {
                 ForEach(statuses) { status in
                     Button(status.name) { actions.applyToScreen(status.id) }
                 }
@@ -309,8 +333,8 @@ struct VideoContextMenu: View {
         Divider()
         CategoriesMenu(items: categoryItems, actions: actions)
         Divider()
-        Button(isFavorite ? "Rimuovi dai preferiti" : "Aggiungi ai preferiti", action: actions.toggleFavorite)
-        Button("Elimina video", role: .destructive, action: actions.delete)
+        Button(isFavorite ? L("card.favorite.remove") : L("card.favorite.add"), action: actions.toggleFavorite)
+        Button(L("video.delete"), role: .destructive, action: actions.delete)
     }
 }
 

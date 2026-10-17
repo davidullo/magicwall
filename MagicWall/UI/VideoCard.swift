@@ -9,8 +9,11 @@ struct VideoCard: View {
     var isLive: Bool = false
     let onOpen: () -> Void
 
+    @EnvironmentObject private var theme: ThemeStore
     @EnvironmentObject private var viewModel: LibraryViewModel
     @State private var isHovering = false
+
+    private var radius: CGFloat { theme.active.cornerRadiusValue }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -19,21 +22,22 @@ struct VideoCard: View {
         }
         .contentShape(Rectangle())
         .onTapGesture { onOpen() }
+        .accessibilityIdentifier("grid.videoCard")
         .onHover { hovering in
             withAnimation(.easeOut(duration: 0.15)) { isHovering = hovering }
         }
-        .help("Apri l’anteprima di “\(video.title)”")
+        .help(L("card.open.help", video.title))
     }
 
     // MARK: - Poster
 
     private var thumbnail: some View {
         PosterThumbnail(video: video)
-            .clipShape(RoundedRectangle(cornerRadius: MagicWallTheme.cardRadius, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: MagicWallTheme.cardRadius, style: .continuous)
+                RoundedRectangle(cornerRadius: radius, style: .continuous)
                     .strokeBorder(
-                        isHovering ? Color.white.opacity(0.35) : MagicWallTheme.stroke,
+                        isHovering ? theme.active.accentColor.opacity(0.6) : theme.active.dividerColor,
                         lineWidth: 1
                     )
             )
@@ -52,7 +56,7 @@ struct VideoCard: View {
                     .font(.system(size: 10, weight: .semibold).monospacedDigit())
                     .padding(.horizontal, 6)
                     .padding(.vertical, 3)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(theme.active.textPrimaryColor)
                     .background(.black.opacity(0.6), in: Capsule())
                     .padding(8)
                     .opacity(video.durationLabel == "—" ? 0 : 1)
@@ -68,17 +72,17 @@ struct VideoCard: View {
             ZStack {
                 Color.black.opacity(0.32)
                 Circle()
-                    .fill(.white)
+                    .fill(theme.active.accentColor)
                     .frame(width: 46, height: 46)
                     .overlay {
                         Image(systemName: "play.fill")
                             .font(.system(size: 17, weight: .bold))
-                            .foregroundStyle(.black)
+                            .foregroundStyle(theme.active.accentTextColor)
                             .offset(x: 1.5)
                     }
                     .shadow(color: .black.opacity(0.3), radius: 10, y: 4)
             }
-            .clipShape(RoundedRectangle(cornerRadius: MagicWallTheme.cardRadius, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
             .transition(.opacity)
             .allowsHitTesting(false)
         }
@@ -90,13 +94,12 @@ struct VideoCard: View {
         } label: {
             Image(systemName: isFavorite ? "heart.fill" : "heart")
                 .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(isFavorite ? Color(red: 1, green: 0.28, blue: 0.42) : .white)
+                .foregroundStyle(isFavorite ? theme.active.accentColor : theme.active.textPrimaryColor)
                 .frame(width: 26, height: 26)
                 .background(.black.opacity(0.5), in: Circle())
-                .overlay(Circle().strokeBorder(.white.opacity(0.14), lineWidth: 1))
         }
         .buttonStyle(PressableButtonStyle())
-        .help(isFavorite ? "Rimuovi dai preferiti" : "Aggiungi ai preferiti")
+        .help(isFavorite ? L("card.favorite.remove") : L("card.favorite.add"))
         .animation(.easeOut(duration: 0.12), value: isFavorite)
     }
 
@@ -106,12 +109,12 @@ struct VideoCard: View {
         VStack(alignment: .leading, spacing: 3) {
             Text(video.title)
                 .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(.white.opacity(0.95))
+                .foregroundStyle(theme.active.textPrimaryColor)
                 .lineLimit(1)
 
             Text(metadataLine)
                 .font(.system(size: 11))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(theme.active.textSecondaryColor)
                 .lineLimit(1)
         }
     }

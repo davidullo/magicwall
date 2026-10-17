@@ -47,11 +47,34 @@ targets:
           - CFBundleURLName: app.magicwall.deeplink
             CFBundleTypeRole: Editor
             CFBundleURLSchemes: [magicwall]
+
+  MagicWallUITests:
+    type: bundle.ui-testing
+    platform: macOS
+    deploymentTarget: "15.0"
+    sources:
+      - path: MagicWallUITests
+    dependencies:
+      - target: MagicWall
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.magicwall.uitests
+        TEST_TARGET_NAME: MagicWall
+        GENERATE_INFOPLIST_FILE: YES
+        CODE_SIGN_STYLE: Manual
+        CODE_SIGN_IDENTITY: "-"
+        DEVELOPMENT_TEAM: ""
+
 schemes:
   MagicWall:
     build:
       targets:
         MagicWall: all
+        MagicWallUITests: [test]
+    test:
+      config: Debug
+      targets:
+        - MagicWallUITests
     run:
       config: Debug
     archive:

@@ -2,75 +2,94 @@ import AppKit
 import MagicWallCore
 import SwiftUI
 
-/// The app's Settings window, grouped into playback, startup, library,
-/// maintenance and about sections. Intentionally capped at 540×420.
+/// The app's Settings window, split into three tabs:
+///
+/// - **General** — playback policy, launch at login, library stats, language
+///   and maintenance.
+/// - **Theme** — the live theme editor (see ``ThemeEditorView``).
+/// - **About** — version and a one-liner about the app.
+///
+/// Every user-facing string goes through the `L(...)` lookup so the whole
+/// window re-localizes when the interface language changes.
 struct SettingsView: View {
+    @EnvironmentObject private var themeStore: ThemeStore
+
+    var body: some View {
+        TabView {
+            GeneralSettingsView()
+                .tabItem { Label(L("settings.tab.general"), systemImage: "gearshape") }
+
+            ThemeEditorView()
+                .tabItem { Label(L("settings.tab.theme"), systemImage: "paintpalette") }
+
+            AboutSettingsView()
+                .tabItem { Label(L("settings.tab.about"), systemImage: "info.circle") }
+        }
+        .frame(width: 720, height: 560)
+        .tint(themeStore.active.accentColor)
+    }
+}
+
+// MARK: - General
+
+/// Everything that used to live in the single-sheet settings, now grouped in a
+/// scrollable, grouped form.
+struct GeneralSettingsView: View {
     @EnvironmentObject private var viewModel: LibraryViewModel
     @EnvironmentObject private var engine: WallpaperEngine
     @EnvironmentObject private var loginItemService: LoginItemService
+    @EnvironmentObject private var localization: LocalizationManager
 
     var body: some View {
         Form {
             playbackSection
             startupSection
             librarySection
+            languageSection
             maintenanceSection
-            aboutSection
         }
         .formStyle(.grouped)
-        .frame(width: 540, height: 420)
     }
 
-    // MARK: - Playback
+    // MARK: Playback
 
     private var playbackSection: some View {
-        Section("Riproduzione") {
-            Toggle("Pausa wallpaper", isOn: Binding(
+        Section {
+            Toggle(L("settings.playback.pauseWallpaper"), isOn: Binding(
                 get: { engine.isPaused },
                 set: { engine.isPaused = $0 }
             ))
-            Toggle("Pausa su batteria", isOn: $engine.pauseOnBattery)
-            Toggle("Pausa con desktop nascosto", isOn: $engine.pauseWhenOccluded)
-            Toggle("Pausa in risparmio energetico", isOn: $engine.pauseOnLowPower)
-            Toggle("Pausa a schermo bloccato", isOn: $engine.pauseWhenLocked)
-            Toggle("Pausa con pressione termica", isOn: $engine.pauseOnThermalPressure)
+            Toggle(L("settings.playback.pauseOnBattery"), isOn: $engine.pauseOnBattery)
+            Toggle(L("settings.playback.pauseOccluded"), isOn: $engine.pauseWhenOccluded)
+            Toggle(L("settings.playback.pauseLowPower"), isOn: $engine.pauseOnLowPower)
+            Toggle(L("settings.playback.pauseLocked"), isOn: $engine.pauseWhenLocked)
+            Toggle(L("settings.playback.pauseThermal"), isOn: $engine.pauseOnThermalPressure)
 
             if !engine.pauseReasons.isEmpty {
-                Text("In pausa: \(engine.pauseReasons.map(Self.italianLabel(for:)).joined(separator: ", "))")
+                Text(L("settings.playback.paused", engine.pauseReasons.map { L("engine.reason.\($0.rawValue)") }.joined(separator: ", ")))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
+        } header: {
+            Text(L("settings.playback.title"))
         }
     }
 
-    private static func italianLabel(for reason: PlaybackPolicy.Reason) -> String {
-        switch reason {
-        case .userPaused: return "pausa manuale"
-        case .onBattery: return "alimentazione a batteria"
-        case .lowPowerMode: return "risparmio energetico"
-        case .thermalPressure: return "pressione termica"
-        case .screenLocked: return "schermo bloccato"
-        case .displaysAsleep: return "display spenti"
-        case .systemAsleep: return "sistema in stop"
-        case .sessionInactive: return "sessione inattiva"
-        case .desktopOccluded: return "desktop nascosto"
-        }
-    }
-
-    // MARK: - Startup
+    // MARK: Startup
 
     private var startupSection: some View {
-        Section("Avvio") {
-            Toggle("Avvia MagicWall al login", isOn: Binding(
+        Section {
+            Toggle(L("settings.startup.launchAtLogin"), isOn: Binding(
                 get: { loginItemService.isEnabled },
                 set: { loginItemService.setEnabled($0) }
             ))
 
             if loginItemService.requiresApproval {
-                Text("Elemento di login registrato: richiede l’approvazione in Impostazioni di Sistema.")
+                Text(L("settings.startup.requiresApproval"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
 
             if let error = loginItemService.lastError {
@@ -80,53 +99,106 @@ struct SettingsView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            Button("Apri Impostazioni di Sistema → Login Items") {
+            Button(L("settings.startup.openSystemSettings")) {
                 loginItemService.openSystemSettingsLoginItems()
             }
+        } header: {
+            Text(L("settings.startup.title"))
         }
     }
 
-    // MARK: - Library
+    // MARK: Library
 
     private var librarySection: some View {
-        Section("Libreria") {
-            LabeledContent("Video", value: "\(viewModel.videos.count)")
-            LabeledContent("Dimensione", value: viewModel.librarySizeLabel)
+        Section {
+            LabeledContent {
+                Text("\(viewModel.videos.count)")
+            } label: {
+                Text(L("settings.library.videos"))
+            }
 
-            LabeledContent("Percorso") {
-                Button("Mostra nel Finder") {
+            LabeledContent {
+                Text(viewModel.librarySizeLabel)
+            } label: {
+                Text(L("settings.library.size"))
+            }
+
+            LabeledContent {
+                Button(L("settings.library.reveal")) {
                     NSWorkspace.shared.activateFileViewerSelecting([AppPaths.libraryRoot])
                 }
+            } label: {
+                Text(L("settings.library.location"))
             }
+
             Text(AppPaths.libraryRoot.path)
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
                 .truncationMode(.middle)
+        } header: {
+            Text(L("settings.library.title"))
         }
     }
 
-    // MARK: - Maintenance
+    // MARK: Language
+
+    private var languageSection: some View {
+        Section {
+            Picker(selection: Binding(
+                get: { localization.language },
+                set: { localization.setLanguage($0) }
+            )) {
+                ForEach(AppLanguage.allCases) { language in
+                    Text(L("settings.language.option.\(language.rawValue)")).tag(language)
+                }
+            } label: {
+                Text(L("settings.language.picker"))
+            }
+            .pickerStyle(.menu)
+
+            Text(L("settings.language.hint"))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        } header: {
+            Text(L("settings.language"))
+        }
+    }
+
+    // MARK: Maintenance
 
     private var maintenanceSection: some View {
-        Section("Manutenzione") {
-            Button("Ferma tutti i wallpaper") {
+        Section {
+            Button(L("common.stopAllWallpapers")) {
                 engine.clearAll()
             }
             .disabled(!engine.hasActiveWallpaper)
+        } header: {
+            Text(L("settings.maintenance.title"))
         }
     }
+}
 
-    // MARK: - About
+// MARK: - About
 
-    private var aboutSection: some View {
-        Section("Informazioni") {
-            LabeledContent("Versione", value: "\(Bundle.main.shortVersion) (\(Bundle.main.buildNumber))")
-            Text("MagicWall — wallpaper video locali per macOS. Nessun servizio cloud: i tuoi video restano sul Mac.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+struct AboutSettingsView: View {
+    var body: some View {
+        Form {
+            Section {
+                LabeledContent {
+                    Text("\(Bundle.main.shortVersion) (\(Bundle.main.buildNumber))")
+                } label: {
+                    Text(L("settings.about.version"))
+                }
+                Text(L("settings.about.blurb"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            } header: {
+                Text("MagicWall")
+            }
         }
+        .formStyle(.grouped)
     }
 }
 

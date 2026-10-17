@@ -1,0 +1,268 @@
+/* MagicWall — English (default) */
+
+/* Common */
+"common.ok" = "OK";
+"common.cancel" = "Cancel";
+"common.delete" = "Delete";
+"common.close" = "Close";
+"common.save" = "Save";
+"common.dismiss" = "Dismiss";
+"common.live" = "LIVE";
+"common.import" = "Import";
+"common.importing" = "Importing…";
+"common.importVideos" = "Import videos";
+"common.importVideosEllipsis" = "Import videos…";
+"common.stopAllWallpapers" = "Stop all wallpapers";
+"common.randomWallpaper" = "Random wallpaper";
+"common.videoCount.one" = "%d video";
+"common.videoCount.other" = "%d videos";
+
+/* Tabs */
+"tab.home" = "Home";
+"tab.explore" = "Explore";
+"tab.library" = "Library";
+"tab.favorites" = "Favorites";
+
+/* Sidebar */
+"sidebar.home.help" = "Go to Home";
+"sidebar.search.placeholder" = "Search library";
+"sidebar.search.clear" = "Clear search";
+"sidebar.import.help" = "Import MP4/MOV videos (or drop them on the window)";
+"sidebar.settings" = "Settings";
+"sidebar.settings.help" = "Open MagicWall settings";
+"sidebar.pause" = "Pause wallpapers";
+"sidebar.resume" = "Resume wallpapers";
+"sidebar.shuffle.help" = "Random wallpaper on all screens";
+"sidebar.more.help" = "More actions";
+"sidebar.screens" = "SCREENS";
+"sidebar.noWallpaper" = "No wallpaper";
+"sidebar.rebuildLibrary" = "Rebuild library";
+
+/* Playback toggles (shared by sidebar, menu bar and settings) */
+"playback.pause.wallpapers" = "Pause wallpapers";
+"playback.pause.battery" = "Pause on battery";
+"playback.pause.occluded" = "Pause when desktop is hidden";
+
+/* Home */
+"home.shelf.recent" = "Recently added";
+"home.shelf.continue" = "Continue watching";
+"home.hero.featured" = "FEATURED";
+"home.hero.play" = "Play as wallpaper";
+"home.hero.preview" = "Preview";
+
+/* Explore */
+"explore.empty.title" = "No videos in this category";
+"explore.empty.message" = "Drop videos here or assign one from a card's context menu.";
+"explore.filter.all" = "All";
+
+/* Library */
+"library.shuffle" = "Shuffle";
+
+/* Favorites */
+"favorites.empty.title" = "No favorites yet";
+"favorites.empty.message" = "Tap the heart on a card to keep your best wallpapers here.";
+
+/* Search */
+"search.results" = "Results for “%@”";
+"search.empty.title" = "No results";
+"search.empty.message" = "Try another title, or import new videos.";
+
+/* Drag & drop */
+"drop.hint" = "Drop videos to import them";
+
+/* Empty library */
+"empty.library.title" = "Your library is empty";
+"empty.library.message" = "Drop your MP4/MOV videos here or import them,\nthen pick the wallpaper that will bring your desktop to life.";
+
+/* Video card & context menu */
+"card.open.help" = "Open the preview of “%@”";
+"card.favorite.add" = "Add to favorites";
+"card.favorite.remove" = "Remove from favorites";
+"video.play" = "Play as wallpaper";
+"video.applyToScreen" = "Apply to screen";
+"video.applyToAllScreens" = "Apply to all screens";
+"video.delete" = "Delete video";
+"video.screenAlreadyActive" = "%@ — already active";
+"video.status.playingAll" = "“%@” is now playing on all screens.";
+"video.status.playingOnScreen" = "“%@” is now playing on %@.";
+"video.status.deleted" = "Deleted “%@”.";
+"video.error.favorite" = "Could not update favorite: %@";
+"video.error.delete" = "Could not delete video: %@";
+
+/* Categories */
+"category.new" = "New category";
+"category.newEllipsis" = "New category…";
+"category.create" = "Create";
+"category.nameField" = "Name";
+"category.new.message" = "Group your wallpapers by theme, style or brightness.";
+"category.menu" = "Categories";
+"category.none" = "No categories";
+"category.delete" = "Delete category";
+
+/* Preview overlay */
+"preview.close.help" = "Close (Esc)";
+"preview.manageCategories.help" = "Manage categories";
+"preview.delete.help" = "Delete from library";
+
+/* Import */
+"import.panel.title" = "Import Wallpaper Videos";
+"import.panel.message" = "Choose MP4/MOV videos or a folder containing them.";
+"import.none" = "No importable videos found in the selection.";
+"import.summary.one" = "Imported %d video.";
+"import.summary.other" = "Imported %d videos.";
+"import.summary.one.duplicates" = "Imported %d video (duplicates reused).";
+"import.summary.other.duplicates" = "Imported %d videos (duplicates reused).";
+"import.error" = "Import failed: %@";
+
+/* Library errors */
+"library.error" = "Library error: %@";
+
+/* Settings — tabs */
+"settings.tab.general" = "General";
+"settings.tab.theme" = "Theme";
+"settings.tab.about" = "About";
+
+/* Settings — playback */
+"settings.playback.title" = "Playback";
+"settings.playback.pauseWallpaper" = "Pause wallpaper";
+"settings.playback.pauseOnBattery" = "Pause on battery";
+"settings.playback.pauseOccluded" = "Pause when desktop is hidden";
+"settings.playback.pauseLowPower" = "Pause in Low Power Mode";
+"settings.playback.pauseLocked" = "Pause when screen is locked";
+"settings.playback.pauseThermal" = "Pause under thermal pressure";
+"settings.playback.paused" = "Paused: %@";
+
+/* Settings — startup */
+"settings.startup.title" = "Startup";
+"settings.startup.launchAtLogin" = "Launch MagicWall at login";
+"settings.startup.requiresApproval" = "Login item registered: it needs approval in System Settings.";
+"settings.startup.openSystemSettings" = "Open System Settings → Login Items";
+
+/* Settings — library */
+"settings.library.title" = "Library";
+"settings.library.videos" = "Videos";
+"settings.library.size" = "Size";
+"settings.library.location" = "Location";
+"settings.library.reveal" = "Reveal in Finder";
+
+/* Settings — language */
+"settings.language" = "Language";
+"settings.language.default" = "Default language";
+"settings.language.picker" = "Interface language";
+"settings.language.hint" = "The interface language changes instantly.";
+"settings.language.option.en" = "English";
+"settings.language.option.it" = "Italiano";
+
+/* Settings — maintenance */
+"settings.maintenance.title" = "Maintenance";
+
+/* Settings — about */
+"settings.about.version" = "Version";
+"settings.about.blurb" = "MagicWall — local video wallpapers for macOS. No cloud service: your videos stay on your Mac.";
+
+/* Engine pause reasons */
+"engine.reason.userPaused" = "Paused manually";
+"engine.reason.onBattery" = "On battery power";
+"engine.reason.lowPowerMode" = "Low Power Mode";
+"engine.reason.thermalPressure" = "Thermal pressure";
+"engine.reason.screenLocked" = "Screen locked";
+"engine.reason.displaysAsleep" = "Displays asleep";
+"engine.reason.systemAsleep" = "System asleep";
+"engine.reason.sessionInactive" = "Session inactive";
+"engine.reason.desktopOccluded" = "Desktop hidden";
+
+/* Menu bar */
+"menubar.open" = "Open MagicWall";
+"menubar.noDisplay" = "No displays detected";
+"menubar.status.none" = "%@: no wallpaper";
+"menubar.favorites.apply" = "Apply favorite";
+"menubar.favorites.empty" = "No favorites";
+"menubar.nextRandom" = "Next random";
+"menubar.stop" = "Stop wallpaper";
+"menubar.quit" = "Quit";
+
+/* Theme editor — saved themes */
+"theme.section.saved" = "Saved Themes";
+"theme.accent.help" = "Accent colour of this theme";
+"theme.pill.active" = "Active";
+"theme.pill.builtIn" = "Built-in";
+"theme.action.activate" = "Activate";
+"theme.action.duplicate" = "Duplicate";
+"theme.builtIn.cannotDelete" = "Built-in themes cannot be deleted.";
+"theme.delete.help" = "Delete this theme.";
+
+/* Theme editor — colours */
+"theme.section.colors" = "Colors";
+"theme.builtIn.fork" = "Built-in themes fork into a copy when edited.";
+"theme.group.brand" = "Brand";
+"theme.group.backgrounds" = "Backgrounds";
+"theme.group.text" = "Text";
+"theme.group.badges" = "Badges";
+"theme.group.buttons" = "Buttons & chrome";
+
+/* Theme tokens */
+"theme.token.accent" = "Accent";
+"theme.token.accent.help" = "Primary brand colour used by buttons and highlights.";
+"theme.token.accentText" = "Accent text";
+"theme.token.accentText.help" = "Text drawn on top of the accent colour.";
+"theme.token.windowBackground" = "Window background";
+"theme.token.windowBackground.help" = "Backdrop of the main window.";
+"theme.token.sidebarBackground" = "Sidebar background";
+"theme.token.sidebarBackground.help" = "Backdrop of sidebars and navigation panels.";
+"theme.token.surface" = "Surface";
+"theme.token.surface.help" = "Cards, shelves and popovers.";
+"theme.token.surfaceHover" = "Surface hover";
+"theme.token.surfaceHover.help" = "Surface while the pointer hovers it.";
+"theme.token.surfaceSelected" = "Surface selected";
+"theme.token.surfaceSelected.help" = "Surface of the selected item.";
+"theme.token.textPrimary" = "Text primary";
+"theme.token.textPrimary.help" = "Titles and body copy.";
+"theme.token.textSecondary" = "Text secondary";
+"theme.token.textSecondary.help" = "Captions and supporting copy.";
+"theme.token.textTertiary" = "Text tertiary";
+"theme.token.textTertiary.help" = "Hints and disabled labels.";
+"theme.token.badgeBackground" = "Badge background";
+"theme.token.badgeBackground.help" = "Background of neutral pills such as resolution badges.";
+"theme.token.badgeText" = "Badge text";
+"theme.token.badgeText.help" = "Text drawn inside neutral pills.";
+"theme.token.liveBadgeBackground" = "Live badge background";
+"theme.token.liveBadgeBackground.help" = "Background of the “live” pill.";
+"theme.token.liveBadgeText" = "Live badge text";
+"theme.token.liveBadgeText.help" = "Text drawn inside the “live” pill.";
+"theme.token.buttonSecondaryBackground" = "Secondary button background";
+"theme.token.buttonSecondaryBackground.help" = "Background of non-primary buttons.";
+"theme.token.buttonSecondaryText" = "Secondary button text";
+"theme.token.buttonSecondaryText.help" = "Label of non-primary buttons.";
+"theme.token.divider" = "Divider";
+"theme.token.divider.help" = "Separators, strokes and hairlines.";
+
+/* Theme editor — shape & typography */
+"theme.section.shape" = "Shape & Typography";
+"theme.cornerRadius" = "Corner radius";
+"theme.titleWeight" = "Title weight";
+"theme.titleWeight.regular" = "Regular";
+"theme.titleWeight.medium" = "Medium";
+"theme.titleWeight.semibold" = "Semibold";
+"theme.titleWeight.bold" = "Bold";
+"theme.titleWeight.heavy" = "Heavy";
+"theme.useGradients" = "Use gradients";
+"theme.useGradients.help" = "Soften accent surfaces with a subtle gradient.";
+
+/* Theme editor — preview */
+"theme.preview.libraryTitle" = "Wallpaper Library";
+"theme.preview.secondary" = "Secondary text renders with the dedicated token.";
+"theme.preview.tertiary" = "Tertiary text is dimmer still.";
+
+/* Theme editor — actions */
+"theme.saveAs" = "Save As…";
+"theme.resetToDefault" = "Reset to Default";
+"theme.revert" = "Revert";
+"theme.revert.help" = "Reload the theme from its saved values.";
+"theme.alert.saveAs.title" = "Save Theme As";
+"theme.alert.saveAs.nameField" = "Theme name";
+"theme.alert.saveAs.message" = "The active theme is saved as a new, editable copy.";
+
+/* Login item */
+"login.error.notFound" = "MagicWall cannot register as a login item from this location. Move the app to /Applications and try again.";
+"login.error.enable" = "Could not enable startup: %@. If the problem persists, add MagicWall manually from System Settings → General → Login Items.";
+"login.error.disable" = "Could not disable startup: %@. If the problem persists, add MagicWall manually from System Settings → General → Login Items.";

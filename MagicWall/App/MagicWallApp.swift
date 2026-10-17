@@ -6,6 +6,8 @@ struct MagicWallApp: App {
     @StateObject private var viewModel: LibraryViewModel
     @StateObject private var engine: WallpaperEngine
     @StateObject private var loginItemService = LoginItemService()
+    @StateObject private var themeStore = ThemeStore()
+    @StateObject private var localization = LocalizationManager.shared
 
     init() {
         let environment = AppEnvironment.bootstrap()
@@ -19,6 +21,9 @@ struct MagicWallApp: App {
             ContentView()
                 .environmentObject(viewModel)
                 .environmentObject(engine)
+                .environmentObject(themeStore)
+                .environmentObject(localization)
+                .id(localization.language)
                 .task {
                     engine.start()
                     viewModel.refresh()
@@ -33,6 +38,9 @@ struct MagicWallApp: App {
             MenuBarMenuView()
                 .environmentObject(viewModel)
                 .environmentObject(engine)
+                .environmentObject(themeStore)
+                .environmentObject(localization)
+                .id(localization.language)
         } label: {
             Label("MagicWall", systemImage: "sparkles.tv")
         }
@@ -42,6 +50,9 @@ struct MagicWallApp: App {
                 .environmentObject(viewModel)
                 .environmentObject(engine)
                 .environmentObject(loginItemService)
+                .environmentObject(themeStore)
+                .environmentObject(localization)
+                .id(localization.language)
         }
     }
 }

@@ -7,7 +7,8 @@ let package = Package(
         .macOS(.v15)
     ],
     products: [
-        .library(name: "MagicWallCore", targets: ["MagicWallCore"])
+        .library(name: "MagicWallCore", targets: ["MagicWallCore"]),
+        .executable(name: "mwctl", targets: ["mwctl"])
     ],
     dependencies: [
         .package(url: "https://github.com/groue/GRDB.swift.git", from: "7.0.0")
@@ -22,6 +23,11 @@ let package = Package(
         ),
         .testTarget(
             name: "MagicWallCoreTests",
+            dependencies: ["MagicWallCore"],
+            swiftSettings: [.swiftLanguageMode(.v5)]
+        ),
+        .executableTarget(
+            name: "mwctl",
             dependencies: ["MagicWallCore"],
             swiftSettings: [.swiftLanguageMode(.v5)]
         )

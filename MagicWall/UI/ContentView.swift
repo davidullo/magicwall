@@ -3,7 +3,7 @@ import MagicWallCore
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// Root view of the library window.
+/// Root view of the library window: a translucent sidebar plus the detail area.
 ///
 /// Owns nothing but presentation state: the current tab, the previewed video,
 /// drag & drop targeting and a cached map of video → category IDs (rebuilt only
@@ -11,6 +11,7 @@ import UniformTypeIdentifiers
 struct ContentView: View {
     @EnvironmentObject private var viewModel: LibraryViewModel
     @EnvironmentObject private var engine: WallpaperEngine
+    @EnvironmentObject private var theme: ThemeStore
 
     @State private var tab: AppTab = .home
     @State private var previewVideo: Video?
@@ -21,29 +22,45 @@ struct ContentView: View {
     @State private var newCategoryName = ""
 
     var body: some View {
-        ZStack(alignment: .top) {
-            MagicWallTheme.background.ignoresSafeArea()
-
-            VStack(spacing: 0) {
-                MagicWallTopBar(
+        ZStack {
+            HStack(spacing: 0) {
+                SidebarView(
                     tab: $tab,
                     onImport: { viewModel.presentImportPanel() },
                     onShuffle: { viewModel.applyRandomToAllScreens() }
                 )
-                Divider().overlay(MagicWallTheme.stroke)
-                content
-            }
 
-            overlays
+                detail
+            }
+            .frame(minWidth: 980, minHeight: 620)
+            .background(theme.active.windowBackgroundColor)
+            .background(WindowChromeConfigurator())
+            .ignoresSafeArea()
+
+            // The preview floats above the whole window — sidebar included — so
+            // it can never linger behind the user while they navigate beneath it.
+            if let video = previewVideo {
+                VideoPreviewView(
+                    video: video,
+                    onNewCategory: beginCategoryCreation,
+                    onClose: {
+                        withAnimation(.easeOut(duration: 0.15)) { previewVideo = nil }
+                    }
+                )
+                .ignoresSafeArea()
+                .transition(.opacity)
+                .zIndex(3)
+            }
         }
         .environment(\.libraryDidMutate, { rebuildMembership() })
-        .frame(minWidth: 980, minHeight: 620)
         .preferredColorScheme(.dark)
-        .toolbar { overflowToolbar }
         .task { rebuildMembership() }
         .onChange(of: viewModel.videos) { _, _ in rebuildMembership() }
         .onChange(of: viewModel.categories) { _, _ in rebuildMembership() }
         .onChange(of: tab) { _, newTab in
+            if previewVideo != nil {
+                withAnimation(.easeOut(duration: 0.15)) { previewVideo = nil }
+            }
             if newTab == .library {
                 viewModel.refresh()
             }
@@ -52,13 +69,24 @@ struct ContentView: View {
             Task { await handleDrop(providers) }
             return true
         }
-        .alert("Nuova categoria", isPresented: $isNamingCategory) {
-            TextField("Nome", text: $newCategoryName)
-            Button("Crea") { createCategory() }
-            Button("Annulla", role: .cancel) { newCategoryName = "" }
+        .alert(L("category.new"), isPresented: $isNamingCategory) {
+            TextField(L("category.nameField"), text: $newCategoryName)
+            Button(L("category.create")) { createCategory() }
+            Button(L("common.cancel"), role: .cancel) { newCategoryName = "" }
         } message: {
-            Text("Raggruppa i tuoi wallpaper per tema, stile o luminosità.")
+            Text(L("category.new.message"))
         }
+    }
+
+    // MARK: - Detail
+
+    private var detail: some View {
+        ZStack(alignment: .top) {
+            content
+            overlays
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .background(theme.active.windowBackgroundColor)
     }
 
     // MARK: - Tab content
@@ -107,16 +135,16 @@ struct ContentView: View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 22) {
                 SectionHeader(
-                    title: "Risultati per “\(query)”",
-                    subtitle: "\(viewModel.displayVideos.count) video"
+                    title: L("search.results", query),
+                    subtitle: videoCountLabel(viewModel.displayVideos.count)
                 )
-                .padding(.horizontal, MagicWallTheme.gutter)
+                .padding(.horizontal, MagicWallLayout.gutter)
 
                 if viewModel.displayVideos.isEmpty {
                     MessageState(
                         icon: "magnifyingglass",
-                        title: "Nessun risultato",
-                        message: "Prova con un altro titolo oppure importa nuovi video."
+                        title: L("search.empty.title"),
+                        message: L("search.empty.message")
                     )
                 } else {
                     VideoGridView(
@@ -125,10 +153,10 @@ struct ContentView: View {
                         onOpen: open,
                         onNewCategory: beginCategoryCreation
                     )
-                    .padding(.horizontal, MagicWallTheme.gutter)
+                    .padding(.horizontal, MagicWallLayout.gutter)
                 }
             }
-            .padding(.top, 26)
+            .padding(.top, MagicWallLayout.contentTopInset)
             .padding(.bottom, 48)
         }
         .scrollIndicators(.hidden)
@@ -141,56 +169,51 @@ struct ContentView: View {
         VStack(spacing: 10) {
             if isDropTargeted {
                 banner(
-                    text: "Rilascia i video per importarli",
+                    text: L("drop.hint"),
                     icon: "arrow.down.circle.fill",
-                    tint: MagicWallTheme.accent,
+                    tint: theme.active.accentColor,
                     dismiss: nil
                 )
             } else if let error = viewModel.lastError {
                 banner(
                     text: error,
                     icon: "exclamationmark.triangle.fill",
-                    tint: Color(red: 1, green: 0.35, blue: 0.35),
+                    tint: theme.active.dangerColor,
                     dismiss: { viewModel.lastError = nil }
                 )
             } else if let message = viewModel.statusMessage {
-                banner(text: message, icon: "checkmark.circle.fill", tint: MagicWallTheme.live, dismiss: nil)
-                    .task(id: message) {
-                        try? await Task.sleep(nanoseconds: 4_000_000_000)
-                        if viewModel.statusMessage == message {
-                            withAnimation(.easeOut(duration: 0.15)) { viewModel.statusMessage = nil }
-                        }
+                banner(
+                    text: message,
+                    icon: "checkmark.circle.fill",
+                    tint: theme.active.liveBadgeBackgroundColor,
+                    dismiss: nil
+                )
+                .task(id: message) {
+                    try? await Task.sleep(nanoseconds: 4_000_000_000)
+                    if viewModel.statusMessage == message {
+                        withAnimation(.easeOut(duration: 0.15)) { viewModel.statusMessage = nil }
                     }
+                }
             }
 
             Spacer(minLength: 0)
         }
-        .padding(.top, 66)
+        .padding(.top, 22)
         .animation(.easeOut(duration: 0.15), value: viewModel.statusMessage)
         .animation(.easeOut(duration: 0.15), value: isDropTargeted)
 
         dropHighlight
-
-        if let video = previewVideo {
-            VideoPreviewView(
-                video: video,
-                onNewCategory: beginCategoryCreation,
-                onClose: { previewVideo = nil }
-            )
-            .transition(.opacity)
-            .zIndex(2)
-        }
     }
 
     private var dropHighlight: some View {
-        RoundedRectangle(cornerRadius: 18, style: .continuous)
+        RoundedRectangle(cornerRadius: theme.active.cornerRadiusValue + 6, style: .continuous)
             .strokeBorder(
-                MagicWallTheme.accent,
+                theme.active.accentColor,
                 style: StrokeStyle(lineWidth: 3, dash: [10, 7])
             )
             .background(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .fill(MagicWallTheme.accent.opacity(0.10))
+                RoundedRectangle(cornerRadius: theme.active.cornerRadiusValue + 6, style: .continuous)
+                    .fill(theme.active.accentColor.opacity(0.10))
             )
             .padding(10)
             .opacity(isDropTargeted ? 1 : 0)
@@ -204,8 +227,8 @@ struct ContentView: View {
                 .foregroundStyle(tint)
 
             Text(text)
-                .font(.system(size: 12.5))
-                .foregroundStyle(.white.opacity(0.95))
+                .font(.system(size: 12.5, weight: .medium))
+                .foregroundStyle(theme.active.textPrimaryColor)
                 .lineLimit(2)
 
             if let dismiss {
@@ -214,52 +237,18 @@ struct ContentView: View {
                 } label: {
                     Image(systemName: "xmark")
                         .font(.system(size: 10, weight: .bold))
-                        .foregroundStyle(.white.opacity(0.7))
+                        .foregroundStyle(theme.active.textTertiaryColor)
                 }
                 .buttonStyle(.plain)
-                .help("Chiudi")
+                .help(L("common.dismiss"))
             }
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 9)
-        .background(MagicWallTheme.surfaceHigh, in: Capsule())
+        .background(theme.active.surfaceHoverColor, in: Capsule())
         .overlay(Capsule().strokeBorder(tint.opacity(0.35), lineWidth: 1))
         .shadow(color: .black.opacity(0.35), radius: 10, y: 4)
         .transition(.move(edge: .top).combined(with: .opacity))
-    }
-
-    // MARK: - Toolbar
-
-    @ToolbarContentBuilder
-    private var overflowToolbar: some ToolbarContent {
-        // Keeps an (invisible) NSToolbar on the window and groups secondary
-        // actions that would crowd the custom top bar.
-        ToolbarItem(placement: .automatic) {
-            Menu {
-                Toggle("Pausa wallpaper", isOn: $engine.isPaused)
-                Toggle("Pausa su batteria", isOn: $engine.pauseOnBattery)
-                Toggle("Pausa con desktop nascosto", isOn: $engine.pauseWhenOccluded)
-                Divider()
-                Button("Importa video…") { viewModel.presentImportPanel() }
-                Button("Wallpaper casuale") { viewModel.applyRandomToAllScreens() }
-                Button("Nuova categoria…") { beginCategoryCreation() }
-                Button("Ricostruisci libreria") { viewModel.refresh() }
-                if engine.hasActiveWallpaper {
-                    Divider()
-                    Button("Ferma tutti i wallpaper") { engine.clearAll() }
-                }
-                Divider()
-                ForEach(engine.statuses) { status in
-                    Text(status.videoTitle.map { "\(status.name): \($0)" } ?? "\(status.name): nessun wallpaper")
-                }
-            } label: {
-                Image(systemName: "ellipsis.circle")
-            }
-            .menuStyle(.borderlessButton)
-            .menuIndicator(.hidden)
-            .fixedSize()
-            .help("Altre azioni")
-        }
     }
 
     // MARK: - Actions

@@ -17,14 +17,15 @@ struct ExploreView: View {
             LazyVStack(alignment: .leading, spacing: 22) {
                 header
                 chips
+                    .accessibilityIdentifier("explore.chips")
 
                 if viewModel.videos.isEmpty {
                     EmptyLibraryState(onImport: { viewModel.presentImportPanel() })
                 } else if filteredVideos.isEmpty {
                     MessageState(
                         icon: "tray",
-                        title: "Nessun video in questa categoria",
-                        message: "Trascina qui i video o assegnane uno dal menu contestuale delle card."
+                        title: L("explore.empty.title"),
+                        message: L("explore.empty.message")
                     )
                 } else {
                     VideoGridView(
@@ -33,10 +34,10 @@ struct ExploreView: View {
                         onOpen: onOpen,
                         onNewCategory: onNewCategory
                     )
-                    .padding(.horizontal, MagicWallTheme.gutter)
+                    .padding(.horizontal, MagicWallLayout.gutter)
                 }
             }
-            .padding(.top, 26)
+            .padding(.top, MagicWallLayout.contentTopInset)
             .padding(.bottom, 48)
         }
         .scrollIndicators(.hidden)
@@ -51,30 +52,24 @@ struct ExploreView: View {
 
     private var header: some View {
         SectionHeader(
-            title: "Explore",
-            subtitle: viewModel.videos.isEmpty ? nil : "\(filteredVideos.count) video",
+            title: L("tab.explore"),
+            subtitle: viewModel.videos.isEmpty
+                ? nil
+                : videoCountLabel(filteredVideos.count),
             trailing: AnyView(
-                Button {
+                HeaderActionButton(title: L("category.new"), systemImage: "folder.badge.plus") {
                     onNewCategory()
-                } label: {
-                    Label("Nuova categoria", systemImage: "folder.badge.plus")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(.white.opacity(0.9))
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 7)
-                        .background(Color.white.opacity(0.12), in: Capsule())
                 }
-                .buttonStyle(PressableButtonStyle())
             )
         )
-        .padding(.horizontal, MagicWallTheme.gutter)
+        .padding(.horizontal, MagicWallLayout.gutter)
     }
 
     private var chips: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
                 CategoryChip(
-                    title: "Tutte",
+                    title: L("explore.filter.all"),
                     count: viewModel.videos.count,
                     isSelected: selectedCategoryID == nil
                 ) {
@@ -90,14 +85,14 @@ struct ExploreView: View {
                         selectedCategoryID = category.id
                     }
                     .contextMenu {
-                        Button("Elimina categoria", role: .destructive) {
+                        Button(L("category.delete"), role: .destructive) {
                             viewModel.deleteCategory(category)
                             libraryDidMutate()
                         }
                     }
                 }
             }
-            .padding(.horizontal, MagicWallTheme.gutter)
+            .padding(.horizontal, MagicWallLayout.gutter)
             .padding(.vertical, 2)
         }
     }
@@ -124,32 +119,35 @@ private struct CategoryChip: View {
     let isSelected: Bool
     let action: () -> Void
 
+    @EnvironmentObject private var theme: ThemeStore
     @State private var isHovering = false
 
     var body: some View {
         Button(action: action) {
             HStack(spacing: 7) {
                 Text(title)
-                    .font(.system(size: 12.5, weight: isSelected ? .semibold : .medium))
+                    .font(.system(size: 12.5, weight: isSelected ? .bold : .medium))
                 Text("\(count)")
                     .font(.system(size: 10, weight: .semibold).monospacedDigit())
                     .padding(.horizontal, 5)
                     .padding(.vertical, 1)
-                    .background(Color.white.opacity(isSelected ? 0.22 : 0.10), in: Capsule())
+                    .background(
+                        isSelected
+                            ? theme.active.accentTextColor.opacity(0.22)
+                            : theme.active.badgeBackgroundColor,
+                        in: Capsule()
+                    )
             }
-            .foregroundStyle(isSelected ? Color.white : Color.white.opacity(0.75))
+            .foregroundStyle(isSelected ? theme.active.accentTextColor : theme.active.textSecondaryColor)
             .padding(.horizontal, 13)
             .padding(.vertical, 7)
             .background {
                 if isSelected {
-                    Capsule().fill(MagicWallTheme.accentGradient)
+                    Capsule().fill(theme.active.accentShapeStyle)
                 } else {
                     Capsule()
-                        .fill(MagicWallTheme.surface)
-                        .overlay(Capsule().strokeBorder(
-                            isHovering ? Color.white.opacity(0.22) : MagicWallTheme.stroke,
-                            lineWidth: 1
-                        ))
+                        .fill(isHovering ? theme.active.surfaceHoverColor : theme.active.surfaceColor)
+                        .overlay(Capsule().strokeBorder(theme.active.dividerColor, lineWidth: 1))
                 }
             }
         }

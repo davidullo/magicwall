@@ -19,7 +19,7 @@ struct VideoShelf: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             SectionHeader(title: title, subtitle: subtitle)
-                .padding(.horizontal, MagicWallTheme.gutter)
+                .padding(.horizontal, MagicWallLayout.gutter)
 
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack(spacing: 16) {
@@ -34,11 +34,11 @@ struct VideoShelf: View {
                         .contextMenu { contextMenu(for: video) }
                     }
                 }
-                .padding(.horizontal, MagicWallTheme.gutter)
+                .padding(.horizontal, MagicWallLayout.gutter)
                 .padding(.vertical, 10)
             }
             .scrollClipDisabled()
-            .frame(height: MagicWallTheme.shelfHeight)
+            .frame(height: MagicWallLayout.shelfHeight)
         }
     }
 

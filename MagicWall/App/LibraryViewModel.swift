@@ -62,7 +62,7 @@ final class LibraryViewModel: ObservableObject {
             libraryBytes = try repository.totalLibraryBytes()
             lastError = nil
         } catch {
-            lastError = "Library error: \(error.localizedDescription)"
+            lastError = L("library.error", error.localizedDescription)
         }
     }
 
@@ -70,9 +70,9 @@ final class LibraryViewModel: ObservableObject {
 
     func presentImportPanel() {
         let panel = NSOpenPanel()
-        panel.title = "Import Wallpaper Videos"
-        panel.message = "Choose MP4/MOV videos or a folder containing them."
-        panel.prompt = "Import"
+        panel.title = L("import.panel.title")
+        panel.message = L("import.panel.message")
+        panel.prompt = L("common.import")
         panel.allowsMultipleSelection = true
         panel.canChooseDirectories = true
         panel.canChooseFiles = true
@@ -92,13 +92,23 @@ final class LibraryViewModel: ObservableObject {
             let imported = try await importService.importVideos(from: urls)
             refresh()
             if imported.isEmpty {
-                statusMessage = "No importable videos found in the selection."
+                statusMessage = L("import.none")
             } else {
-                let duplicates = imported.count != urls.count
-                statusMessage = "Imported \(imported.count) video\(imported.count == 1 ? "" : "s")\(duplicates ? " (duplicates reused)" : "")."
+                let count = imported.count
+                let duplicates = count != urls.count
+                statusMessage = Self.importSummary(count: count, duplicates: duplicates)
             }
         } catch {
-            lastError = "Import failed: \(error.localizedDescription)"
+            lastError = L("import.error", error.localizedDescription)
+        }
+    }
+
+    private static func importSummary(count: Int, duplicates: Bool) -> String {
+        switch (count == 1, duplicates) {
+        case (true, true): return L("import.summary.one.duplicates", count)
+        case (true, false): return L("import.summary.one", count)
+        case (false, true): return L("import.summary.other.duplicates", count)
+        case (false, false): return L("import.summary.other", count)
         }
     }
 
@@ -107,7 +117,7 @@ final class LibraryViewModel: ObservableObject {
     func applyToAllScreens(_ video: Video) {
         engine.applyToAllScreens(video)
         try? repository.markPlayed(id: video.id)
-        statusMessage = "“\(video.title)” is now playing on all screens."
+        statusMessage = L("video.status.playingAll", video.title)
     }
 
     func applyRandomToAllScreens() {
@@ -123,7 +133,7 @@ final class LibraryViewModel: ObservableObject {
             try repository.setFavorite(newValue, videoID: video.id)
             if newValue { favoriteIDs.insert(video.id) } else { favoriteIDs.remove(video.id) }
         } catch {
-            lastError = "Could not update favorite: \(error.localizedDescription)"
+            lastError = L("video.error.favorite", error.localizedDescription)
         }
     }
 
@@ -139,9 +149,9 @@ final class LibraryViewModel: ObservableObject {
             }
             try repository.deleteVideo(id: video.id)
             refresh()
-            statusMessage = "Deleted “\(video.title)”."
+            statusMessage = L("video.status.deleted", video.title)
         } catch {
-            lastError = "Could not delete video: \(error.localizedDescription)"
+            lastError = L("video.error.delete", error.localizedDescription)
         }
     }
 

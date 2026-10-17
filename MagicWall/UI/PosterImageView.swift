@@ -6,12 +6,13 @@ struct PosterImageView: View {
     let url: URL?
     var fallbackTitle: String = ""
 
+    @EnvironmentObject private var theme: ThemeStore
     @State private var image: NSImage?
 
     var body: some View {
         ZStack {
             LinearGradient(
-                colors: [Color(white: 0.18), Color(white: 0.10)],
+                colors: [theme.active.surfaceColor, theme.active.windowBackgroundColor],
                 startPoint: .top,
                 endPoint: .bottom
             )
@@ -22,7 +23,7 @@ struct PosterImageView: View {
             } else if !fallbackTitle.isEmpty {
                 Text(fallbackTitle)
                     .font(.callout)
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(theme.active.textTertiaryColor)
                     .multilineTextAlignment(.center)
                     .padding()
             }
