@@ -39,8 +39,13 @@ Requires **macOS 15 or later**. Builds are universal (Apple Silicon and Intel).
   actions (play, rename, favorites, categories).
 - **Multi-monitor** — a different video for each display; assignments survive
   restarts and are restored automatically.
-- **Favorites rotation** — auto-swap your favorite wallpapers on all screens
-  every 1–60 minutes; every favorite is shown once per cycle before repeating.
+- **Favorites rotation** — auto-swap your favorite wallpapers every 1–60
+  minutes: the same clip on every display, or a different one per display;
+  every favorite is shown once per cycle before repeating.
+- **Starter wallpapers** — on first launch MagicWall offers four ready-made 4K
+  clips (Dreamscape, Clover Rainbow, Aurora Forest, Cherry Blossom Spring,
+  ~38 MB in total). They are downloaded only if you accept, can be skipped and
+  removed later from Settings.
 - **Power policy** — automatic pausing on battery, Low Power Mode, thermal
   pressure, screen lock or occluded desktop, with recovery after sleep/wake.
 - **Menu bar** — pause, shuffle, favorites, rotation and stop without opening
@@ -52,7 +57,8 @@ Requires **macOS 15 or later**. Builds are universal (Apple Silicon and Intel).
   day, verifies the signature of the download and installs it in place when
   you say so (checks can be turned off in Settings → About).
 - **Completely local** — no accounts, no telemetry: your videos never leave
-  your Mac. The update check is the only network access the app makes.
+  your Mac. The only network requests are the daily update check and the
+  optional starter-wallpaper download, which you can skip or remove.
 
 ## 🚀 Getting started
 

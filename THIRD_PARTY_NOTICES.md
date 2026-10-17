@@ -61,5 +61,12 @@ SOFTWARE.
 
 ## Media assets
 
-No third-party video or image assets are bundled with this repository.
-Demo/test media is generated locally and is not part of the distributed app.
+- **Starter wallpapers** — the app offers four optional 4K wallpapers
+  ("Dreamscape", "Clover Rainbow", "Aurora Forest", "Cherry Blossom Spring").
+  They are downloaded on request from the `starter-v1` GitHub release, are not
+  bundled with the app and are not committed to this repository. The MIT
+  license of this repository does **not** cover them.
+
+- Demo/test media is generated locally and is not part of the distributed app.
+- The marketing site (`site/`) ships derivative stills and clips; the source
+  files are not committed (see `site/README.md` for the derivations).

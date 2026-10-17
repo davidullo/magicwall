@@ -137,6 +137,7 @@ struct GeneralSettingsView: View {
     @EnvironmentObject private var engine: WallpaperEngine
     @EnvironmentObject private var loginItemService: LoginItemService
     @EnvironmentObject private var localization: LocalizationManager
+    @EnvironmentObject private var starterService: StarterWallpaperService
 
     @State private var showsAutomaticPause = false
 
@@ -148,6 +149,7 @@ struct GeneralSettingsView: View {
             playbackCard
             applicationCard
             libraryCard
+            starterCard
             maintenanceCard
         }
     }
@@ -347,6 +349,130 @@ struct GeneralSettingsView: View {
                 }
             }
         }
+    }
+
+    // MARK: Starter wallpapers
+
+    private var starterCard: some View {
+        SettingsCard(title: L("starter.section.title"), systemImage: "sparkles.tv") {
+            SettingsRow(starterStatusTitle, subtitle: L("starter.settings.hint")) {
+                starterAction
+            }
+
+            if case .downloading(let completed, let total, let downloaded, let totalBytes) = starterService.status {
+                SettingsDivider()
+
+                VStack(alignment: .leading, spacing: 8) {
+                    ProgressView(value: Double(completed), total: Double(max(total, 1)))
+                        .tint(theme.active.accentColor)
+
+                    Text(L(
+                        "starter.download.progress",
+                        completed,
+                        total,
+                        byteLabel(downloaded),
+                        byteLabel(totalBytes)
+                    ))
+                    .font(.system(size: 11))
+                    .foregroundStyle(theme.active.textSecondaryColor)
+                    .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(.vertical, 9)
+            }
+
+            if case .failed(let message) = starterService.status {
+                SettingsDivider()
+
+                HStack(spacing: 6) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 10.5, weight: .semibold))
+
+                    Text(L("starter.download.failed", message))
+                        .font(.system(size: 11))
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    Spacer(minLength: 0)
+                }
+                .foregroundStyle(theme.active.dangerColor)
+                .padding(.vertical, 8)
+            }
+        }
+    }
+
+    private var starterStatusTitle: String {
+        switch starterService.status {
+        case .available:
+            return starterService.hasBeenOffered
+                ? L("starter.state.dismissed")
+                : L("starter.state.available")
+        case .downloading:
+            return L("starter.state.downloading")
+        case .installed:
+            return L("starter.state.installed")
+        case .partial:
+            return L("starter.state.partial")
+        case .failed:
+            return L("starter.state.failed")
+        }
+    }
+
+    @ViewBuilder
+    private var starterAction: some View {
+        switch starterService.status {
+        case .available, .failed:
+            SettingsActionButton(
+                title: L("starter.action.download"),
+                systemImage: "arrow.down.circle",
+                kind: .primary
+            ) {
+                Task { await starterService.downloadAll() }
+            }
+            .accessibilityIdentifier("settings.starter.action")
+
+        case .downloading:
+            SettingsActionButton(
+                title: L("starter.download.cancel"),
+                systemImage: "xmark"
+            ) {
+                starterService.cancel()
+            }
+            .accessibilityIdentifier("settings.starter.action")
+
+        case .installed:
+            removeStarterButton(identifier: "settings.starter.action")
+
+        case .partial:
+            HStack(spacing: 8) {
+                SettingsActionButton(
+                    title: L("starter.action.download"),
+                    systemImage: "arrow.down.circle"
+                ) {
+                    Task { await starterService.downloadAll() }
+                }
+                .accessibilityIdentifier("settings.starter.action")
+
+                removeStarterButton(identifier: "settings.starter.remove")
+            }
+        }
+    }
+
+    private func removeStarterButton(identifier: String) -> some View {
+        SettingsActionButton(
+            title: L("starter.action.remove"),
+            systemImage: "trash",
+            kind: .destructive
+        ) {
+            for id in starterService.installedVideoIDs() {
+                guard let video = try? viewModel.repository.video(id: id) else { continue }
+                viewModel.delete(video)
+            }
+            starterService.refreshStatus()
+        }
+        .accessibilityIdentifier(identifier)
+    }
+
+    private func byteLabel(_ bytes: Int64) -> String {
+        ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
     }
 
     // MARK: Maintenance

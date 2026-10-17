@@ -1,9 +1,19 @@
 import Foundation
 
-/// Where a video came from. `community` is reserved for the future online catalog.
+/// Where a video came from. `community` is reserved for the future online catalog,
+/// `starter` marks videos downloaded from the bundled starter catalog.
 public enum VideoSource: String, Codable, Sendable, CaseIterable {
     case imported
     case community
+    case starter
+
+    /// Tolerant decoding: any value the schema does not know about (a source
+    /// written by a newer version, or corrupted data) degrades to `.imported`
+    /// instead of failing the whole `Video` record.
+    public init(from decoder: Decoder) throws {
+        let raw = try decoder.singleValueContainer().decode(String.self)
+        self = VideoSource(rawValue: raw) ?? .imported
+    }
 }
 
 /// A wallpaper video in the local library.

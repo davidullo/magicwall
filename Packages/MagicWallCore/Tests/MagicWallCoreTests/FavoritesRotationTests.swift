@@ -96,4 +96,62 @@ final class FavoritesRotationTests: XCTestCase {
         XCTAssertEqual(RotationInterval.oneHour.timeInterval, 3600)
         XCTAssertEqual(RotationInterval.allCases.map(\.minutes), [1, 5, 15, 30, 60])
     }
+
+    // MARK: - Rotation mode
+
+    func testLegacyJSONDecodesNewFieldsToTheirDefaults() {
+        let legacy = #"{"enabled":true,"interval":30,"shownVideoIDs":["a","b"]}"#
+
+        guard let decoded = RotationPreferences(encoded: legacy) else {
+            return XCTFail("Legacy preferences must keep decoding")
+        }
+
+        XCTAssertTrue(decoded.enabled)
+        XCTAssertEqual(decoded.interval, .thirtyMinutes)
+        XCTAssertEqual(decoded.shownVideoIDs, ["a", "b"])
+        XCTAssertEqual(decoded.mode, .sameOnAllDisplays)
+        XCTAssertTrue(decoded.shownVideoIDsByScreen.isEmpty)
+    }
+
+    func testPreferencesRoundTripPreservesModeAndPerScreenProgress() {
+        let preferences = RotationPreferences(
+            enabled: true,
+            interval: .fiveMinutes,
+            shownVideoIDs: ["shared"],
+            mode: .differentPerDisplay,
+            shownVideoIDsByScreen: ["display:1": ["a"], "display:2": ["b"]]
+        )
+
+        let decoded = RotationPreferences(encoded: preferences.encoded())
+
+        XCTAssertEqual(decoded, preferences)
+        XCTAssertEqual(decoded?.mode, .differentPerDisplay)
+        XCTAssertEqual(
+            decoded?.shownVideoIDsByScreen,
+            ["display:1": ["a"], "display:2": ["b"]]
+        )
+    }
+
+    func testRotationModeHasExactlyTwoCasesWithLegacyDefault() {
+        XCTAssertEqual(RotationMode.allCases.count, 2)
+        XCTAssertEqual(RotationMode.default, .sameOnAllDisplays)
+        XCTAssertEqual(
+            Set(RotationMode.allCases),
+            [.sameOnAllDisplays, .differentPerDisplay]
+        )
+    }
+
+    func testBannedSetIsRespectedWhenPoolHasAlternatives() {
+        var rotation = FavoritesRotation()
+        var generator = SeededGenerator(seed: 11)
+
+        let pick = rotation.next(
+            from: ["a", "b", "c", "d"],
+            avoiding: ["a", "b"],
+            using: &generator
+        )
+
+        XCTAssertTrue(pick == "c" || pick == "d")
+        XCTAssertEqual(rotation.shownVideoIDs, [pick!])
+    }
 }

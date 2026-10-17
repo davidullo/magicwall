@@ -3,6 +3,8 @@
 /* ═════════════════════════════ buttons ═════════════════════════════ */
 
 .btn {
+  position: relative;
+  isolation: isolate;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -11,11 +13,12 @@
   border-radius: var(--radius-full);
   font-size: 0.92rem;
   font-weight: 550;
+  line-height: 1;
   letter-spacing: -0.012em;
   white-space: nowrap;
-  transition: transform 0.18s var(--ease), box-shadow 0.32s var(--ease),
-    background-image 0.25s var(--ease), border-color 0.22s var(--ease),
-    color 0.2s var(--ease);
+  transition: transform 0.34s cubic-bezier(0.34, 1.45, 0.5, 1),
+    box-shadow 0.42s var(--ease-out), border-color 0.24s var(--ease),
+    color 0.2s var(--ease), filter 0.3s var(--ease);
 }
 
 .btn--sm {
@@ -29,6 +32,7 @@
 }
 
 .btn .ico {
+  display: block;
   flex: 0 0 auto;
 }
 
@@ -38,15 +42,35 @@
   box-shadow: var(--shadow-pink), inset 0 1px 0 rgba(255, 255, 255, 0.42);
 }
 
-.btn--primary:hover {
+/* the hover gradient is cross-faded on its own layer (painted above the base
+   background but below the label thanks to z-index: -1 + isolation on .btn):
+   background-image is not animatable, so swapping it directly snapped. */
+.btn--primary::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
   background-image: var(--grad-accent-hover);
-  transform: translateY(-1px);
-  box-shadow: 0 18px 32px -14px rgba(226, 79, 159, 0.58),
+  opacity: 0;
+  transition: opacity 0.3s var(--ease);
+  pointer-events: none;
+}
+
+.btn--primary:hover::after {
+  opacity: 1;
+}
+
+.btn--primary:hover {
+  transform: translateY(-2px) scale(1.02);
+  filter: saturate(1.05) brightness(1.03);
+  box-shadow: 0 22px 36px -16px rgba(226, 79, 159, 0.62),
     inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 
 .btn--primary:active {
   transform: translateY(0) scale(0.985);
+  transition-duration: 0.12s;
 }
 
 .btn--ghost {
@@ -58,25 +82,18 @@
 
 .btn--ghost:hover {
   border-color: var(--pink-300);
-  transform: translateY(-1px);
+  transform: translateY(-2px) scale(1.01);
   box-shadow: var(--shadow-sm);
 }
 
-/* ══════════════════════════════ dots ══════════════════════════════ */
-
-.dot {
-  flex: 0 0 auto;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--pink-500);
-  box-shadow: 0 0 0 3px rgba(247, 107, 184, 0.16);
+.btn--ghost:active {
+  transform: translateY(0) scale(0.985);
+  transition-duration: 0.12s;
 }
 
-.eyebrow .dot {
-  display: inline-block;
-  margin-right: 8px;
-  vertical-align: middle;
+.btn:focus-visible {
+  outline: 2px solid var(--pink-500);
+  outline-offset: 3px;
 }
 
 /* ══════════════════════════════ blobs ══════════════════════════════ */
@@ -263,7 +280,7 @@
   position: relative;
   z-index: 2;
   grid-area: 1 / 1;
-  width: min(1040px, 80%);
+  width: min(1180px, 88%);
   border-radius: 12px;
   overflow: hidden;
   background: var(--white);
@@ -275,13 +292,13 @@
    (see --screen-ratio in layout.css, which guarantees it never gets clipped) */
 @media (max-width: 1279px) {
   .browser {
-    width: min(1040px, 76%);
+    width: min(1180px, 84%);
   }
 }
 
 @media (max-width: 900px) {
   .browser {
-    width: min(1040px, 74%);
+    width: min(1180px, 82%);
   }
 }
 
@@ -365,14 +382,14 @@
   display: grid;
   justify-items: center;
   gap: clamp(5px, 1cqw, 12px);
-  padding: clamp(16px, 2.8cqw, 34px) clamp(16px, 3cqw, 38px)
-    clamp(18px, 3.2cqw, 42px);
+  padding: clamp(22px, 3.6cqw, 44px) clamp(16px, 3cqw, 38px)
+    clamp(24px, 4cqw, 50px);
   text-align: center;
 }
 
 .mini-title {
   max-width: 22ch;
-  font-size: clamp(1.15rem, 4.4cqw, 3.05rem);
+  font-size: clamp(1.2rem, 4.7cqw, 3.35rem);
   line-height: 1.05;
   letter-spacing: -0.04em;
   font-weight: 620;
@@ -386,7 +403,7 @@
 
 .mini-lede {
   max-width: 46ch;
-  font-size: clamp(0.75rem, 1.75cqw, 1.15rem);
+  font-size: clamp(0.78rem, 1.85cqw, 1.22rem);
   line-height: 1.55;
   color: var(--ink-2);
 }
@@ -403,7 +420,7 @@
 .mini-actions .btn {
   gap: clamp(6px, 0.9cqw, 10px);
   padding: clamp(7px, 0.85cqw, 11px) clamp(13px, 1.5cqw, 20px);
-  font-size: clamp(0.66rem, 1.35cqw, 0.96rem);
+  font-size: clamp(0.66rem, 1.35cqw, 1rem);
 }
 
 .mini-actions .btn .ico {
@@ -411,8 +428,20 @@
   height: 1.05em;
 }
 
+/* the argent pill scales with the mini window like .btn does */
+.mini-actions .argent-content {
+  gap: clamp(6px, 0.9cqw, 10px);
+  padding: clamp(7px, 0.85cqw, 11px) clamp(13px, 1.5cqw, 20px);
+  font-size: clamp(0.66rem, 1.35cqw, 0.96rem);
+}
+
+.mini-actions .argent-content svg {
+  width: 1.05em;
+  height: 1.05em;
+}
+
 .mini-note {
-  font-size: clamp(0.6rem, 1.15cqw, 0.86rem);
+  font-size: clamp(0.6rem, 1.15cqw, 0.9rem);
   color: var(--ink-3);
 }
 
@@ -429,14 +458,14 @@
 
 .mini-facts b {
   display: block;
-  font-size: clamp(0.65rem, 1.35cqw, 1rem);
+  font-size: clamp(0.65rem, 1.35cqw, 1.05rem);
   font-weight: 600;
   letter-spacing: -0.02em;
 }
 
 .mini-facts span {
   display: block;
-  font-size: clamp(0.58rem, 1.1cqw, 0.8rem);
+  font-size: clamp(0.58rem, 1.1cqw, 0.84rem);
   color: var(--ink-3);
 }
 
@@ -615,6 +644,28 @@ html.js [data-reveal].is-in {
     opacity: 1;
     transform: rotate(var(--r, 0deg));
     animation: none;
+  }
+
+  /* the rainbow keeps its colours but holds still — a static fallback */
+  .grad {
+    animation: none;
+  }
+
+  /* buttons keep their colour changes but stop moving/snapping */
+  .btn,
+  .btn--primary::after {
+    transition: none;
+  }
+
+  .btn:hover,
+  .btn:active {
+    transform: none;
+  }
+
+  /* the floating nav settles without animating */
+  .nav,
+  .nav-inner {
+    transition: none;
   }
 }
 

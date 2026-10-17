@@ -12,11 +12,14 @@ struct ContentView: View {
     @EnvironmentObject private var viewModel: LibraryViewModel
     @EnvironmentObject private var engine: WallpaperEngine
     @EnvironmentObject private var theme: ThemeStore
+    @EnvironmentObject private var starterService: StarterWallpaperService
 
     @State private var tab: AppTab = .home
     @State private var previewVideo: Video?
     @State private var isDropTargeted = false
     @State private var membership: [String: Set<Int64>] = [:]
+
+    @State private var isStarterSheetPresented = false
 
     @State private var isNamingCategory = false
     @State private var newCategoryName = ""
@@ -59,7 +62,29 @@ struct ContentView: View {
         .environment(\.libraryDidMutate, { rebuildMembership() })
         .preferredColorScheme(theme.active.preferredColorScheme)
         .task { rebuildMembership() }
-        .onChange(of: viewModel.videos) { _, _ in rebuildMembership() }
+        .task { await presentStarterOfferIfNeeded() }
+        .onChange(of: viewModel.videos) { _, _ in
+            rebuildMembership()
+            maybePresentStarterOffer()
+        }
+        .onChange(of: starterService.status) { _, newStatus in
+            // The library must learn about the newly downloaded videos once the
+            // batch reaches a resting state.
+            switch newStatus {
+            case .installed, .partial:
+                viewModel.refresh()
+            case .available, .downloading, .failed:
+                break
+            }
+        }
+        .sheet(isPresented: $isStarterSheetPresented) {
+            StarterWallpaperSheet(
+                service: starterService,
+                catalogBytes: StarterWallpaperCatalog.current.totalBytes,
+                onClose: { isStarterSheetPresented = false }
+            )
+            .environmentObject(theme)
+        }
         .onChange(of: viewModel.categories) { _, _ in rebuildMembership() }
         .onChange(of: tab) { _, newTab in
             if previewVideo != nil {
@@ -275,6 +300,23 @@ struct ContentView: View {
 
     // MARK: - Actions
 
+    /// Waits a beat for the initial library load before deciding the library is
+    /// empty (the view model has no "loaded" flag), then offers the starter
+    /// wallpapers on first launch.
+    private func presentStarterOfferIfNeeded() async {
+        try? await Task.sleep(nanoseconds: 700_000_000)
+        maybePresentStarterOffer()
+    }
+
+    private func maybePresentStarterOffer() {
+        guard !isStarterSheetPresented else { return }
+        guard !StarterWallpaperService.isOfferDisabledByEnvironment else { return }
+        guard viewModel.videos.isEmpty else { return }
+        guard !starterService.hasBeenOffered else { return }
+        guard starterService.status == .available else { return }
+        isStarterSheetPresented = true
+    }
+
     private func open(_ video: Video) {
         withAnimation(.easeOut(duration: 0.15)) { previewVideo = video }
     }
@@ -347,5 +389,166 @@ struct ContentView: View {
         }
         guard !urls.isEmpty else { return }
         await viewModel.importVideos(urls)
+    }
+}
+
+// MARK: - Starter wallpaper offer
+
+/// First-launch sheet offering the bundled starter wallpapers. It mirrors the
+/// download lifecycle (offer → progress → done / failure) inside a single
+/// surface that cannot be dismissed by clicking outside.
+private struct StarterWallpaperSheet: View {
+    @ObservedObject var service: StarterWallpaperService
+    let catalogBytes: Int64
+    let onClose: () -> Void
+
+    @EnvironmentObject private var theme: ThemeStore
+
+    var body: some View {
+        VStack(spacing: 20) {
+            icon
+
+            VStack(spacing: 8) {
+                Text(L("starter.offer.title"))
+                    .font(.system(size: 20, weight: theme.active.titleFontWeight, design: .rounded))
+                    .foregroundStyle(theme.active.textPrimaryColor)
+                    .multilineTextAlignment(.center)
+
+                Text(message)
+                    .font(.system(size: 12.5))
+                    .foregroundStyle(theme.active.textSecondaryColor)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            controls
+        }
+        .padding(.horizontal, 30)
+        .padding(.vertical, 28)
+        .frame(width: 430)
+        .background(theme.active.windowBackgroundColor)
+        .interactiveDismissDisabled(true)
+    }
+
+    @ViewBuilder
+    private var icon: some View {
+        ZStack {
+            Circle()
+                .fill(iconTint.opacity(0.14))
+                .frame(width: 88, height: 88)
+
+            Image(systemName: iconName)
+                .font(.system(size: 34, weight: .semibold))
+                .foregroundStyle(iconTint)
+        }
+    }
+
+    private var iconName: String {
+        switch service.status {
+        case .failed: return "exclamationmark.triangle.fill"
+        case .installed, .partial: return "checkmark.circle.fill"
+        case .available, .downloading: return "sparkles.tv"
+        }
+    }
+
+    private var iconTint: Color {
+        if case .failed = service.status { return theme.active.dangerColor }
+        return theme.active.accentColor
+    }
+
+    private var message: String {
+        switch service.status {
+        case .available:
+            return L("starter.offer.message", byteLabel(catalogBytes))
+        case .downloading(let completed, let total, let downloaded, let totalBytes):
+            return L(
+                "starter.download.progress",
+                completed,
+                total,
+                byteLabel(downloaded),
+                byteLabel(totalBytes)
+            )
+        case .failed(let reason):
+            return L("starter.download.failed", reason)
+        case .installed, .partial:
+            let count = service.installedCount()
+            return count == 1
+                ? L("starter.download.done.one", count)
+                : L("starter.download.done.other", count)
+        }
+    }
+
+    @ViewBuilder
+    private var controls: some View {
+        switch service.status {
+        case .available:
+            VStack(spacing: 10) {
+                PrimaryActionButton(
+                    title: L("starter.offer.download", byteLabel(catalogBytes)),
+                    systemImage: "arrow.down.circle"
+                ) {
+                    Task { await service.downloadAll() }
+                }
+                .accessibilityIdentifier("starter.offer.download")
+
+                SecondaryActionButton(
+                    title: L("starter.offer.later"),
+                    systemImage: "clock"
+                ) {
+                    service.dismissOffer()
+                    onClose()
+                }
+                .accessibilityIdentifier("starter.offer.later")
+            }
+
+        case .downloading(let completed, let total, let downloaded, let totalBytes):
+            VStack(spacing: 12) {
+                ProgressView(value: Double(completed), total: Double(max(total, 1)))
+                    .tint(theme.active.accentColor)
+                    .frame(width: 300)
+
+                Text(L(
+                    "starter.download.progress",
+                    completed,
+                    total,
+                    byteLabel(downloaded),
+                    byteLabel(totalBytes)
+                ))
+                .font(.system(size: 11.5))
+                .foregroundStyle(theme.active.textSecondaryColor)
+                .multilineTextAlignment(.center)
+
+                SecondaryActionButton(
+                    title: L("starter.download.cancel"),
+                    systemImage: "xmark"
+                ) {
+                    service.cancel()
+                }
+                .accessibilityIdentifier("starter.download.cancel")
+            }
+
+        case .failed:
+            HStack(spacing: 10) {
+                PrimaryActionButton(title: L("starter.action.retry"), systemImage: "arrow.clockwise") {
+                    Task { await service.downloadAll() }
+                }
+                .accessibilityIdentifier("starter.action.retry")
+
+                SecondaryActionButton(title: L("common.close"), systemImage: "xmark") {
+                    onClose()
+                }
+                .accessibilityIdentifier("starter.action.close")
+            }
+
+        case .installed, .partial:
+            PrimaryActionButton(title: L("common.close"), systemImage: "checkmark") {
+                onClose()
+            }
+            .accessibilityIdentifier("starter.action.close")
+        }
+    }
+
+    private func byteLabel(_ bytes: Int64) -> String {
+        ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
     }
 }

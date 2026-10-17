@@ -6,6 +6,7 @@ struct MagicWallApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var viewModel: LibraryViewModel
     @StateObject private var engine: WallpaperEngine
+    @StateObject private var starterService: StarterWallpaperService
     @StateObject private var loginItemService = LoginItemService()
     @StateObject private var themeStore = ThemeStore()
     @StateObject private var localization = LocalizationManager.shared
@@ -15,6 +16,9 @@ struct MagicWallApp: App {
         let environment = AppEnvironment.bootstrap()
         _viewModel = StateObject(wrappedValue: environment.viewModel)
         _engine = StateObject(wrappedValue: environment.engine)
+        _starterService = StateObject(
+            wrappedValue: StarterWallpaperService(repository: environment.repository)
+        )
         AppDelegate.engine = environment.engine
     }
 
@@ -24,6 +28,7 @@ struct MagicWallApp: App {
                 ContentView()
                     .environmentObject(viewModel)
                     .environmentObject(engine)
+                    .environmentObject(starterService)
                     .environmentObject(themeStore)
                     .environmentObject(localization)
                     .environmentObject(updater)
@@ -62,6 +67,7 @@ struct MagicWallApp: App {
             SettingsView()
                 .environmentObject(viewModel)
                 .environmentObject(engine)
+                .environmentObject(starterService)
                 .environmentObject(loginItemService)
                 .environmentObject(themeStore)
                 .environmentObject(localization)

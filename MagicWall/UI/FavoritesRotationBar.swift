@@ -41,6 +41,7 @@ struct FavoritesRotationBar: View {
                 .accessibilityIdentifier("favorites.rotation.toggle")
 
             intervalMenu
+            modeMenu
             nextButton
         }
         .padding(.horizontal, 14)
@@ -83,13 +84,22 @@ struct FavoritesRotationBar: View {
                 captionText(L("rotation.noFavorites"), monospacedDigits: false)
             } else {
                 TimelineView(.periodic(from: .now, by: 1)) { context in
-                    captionText(
-                        L("rotation.nextChange", countdown(now: context.date), shownCount, favoriteCount),
-                        monospacedDigits: true
-                    )
-                    .accessibilityIdentifier("favorites.rotation.caption")
+                    captionText(captionString(now: context.date), monospacedDigits: true)
+                        .accessibilityIdentifier("favorites.rotation.caption")
                 }
             }
+        }
+    }
+
+    /// Same-wallpaper mode also reports the progress through the cycle;
+    /// per-display mode only reports the countdown, since a single "x of y"
+    /// makes no sense when every display has its own cycle.
+    private func captionString(now: Date) -> String {
+        switch engine.rotationMode {
+        case .sameOnAllDisplays:
+            return L("rotation.nextChange", countdown(now: now), shownCount, favoriteCount)
+        case .differentPerDisplay:
+            return L("rotation.nextChange.different", countdown(now: now), L("rotation.mode.short.different"))
         }
     }
 
@@ -141,6 +151,56 @@ struct FavoritesRotationBar: View {
         .fixedSize()
         .accessibilityIdentifier("favorites.rotation.interval")
         .help(L("rotation.interval.help"))
+    }
+
+    /// Icon-only menu picking the wallpaper strategy; a caption-less control
+    /// keeps the bar from getting crowded.
+    private var modeMenu: some View {
+        Menu {
+            ForEach(RotationMode.allCases, id: \.self) { mode in
+                Button {
+                    engine.setRotationMode(mode)
+                } label: {
+                    if mode == engine.rotationMode {
+                        Label(rotationModeLabel(mode), systemImage: "checkmark")
+                    } else {
+                        Text(rotationModeLabel(mode))
+                    }
+                }
+            }
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: rotationModeSymbol(engine.rotationMode))
+                    .font(.system(size: 11.5, weight: .semibold))
+
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 8.5, weight: .bold))
+            }
+            .foregroundStyle(theme.active.buttonSecondaryTextColor)
+            .padding(.horizontal, 11)
+            .padding(.vertical, 7)
+            .background(theme.active.buttonSecondaryBackgroundColor, in: Capsule())
+            .contentShape(Capsule())
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .accessibilityIdentifier("favorites.rotation.mode")
+        .help(L("rotation.mode.help"))
+    }
+
+    private func rotationModeLabel(_ mode: RotationMode) -> String {
+        switch mode {
+        case .sameOnAllDisplays: L("rotation.mode.same")
+        case .differentPerDisplay: L("rotation.mode.different")
+        }
+    }
+
+    private func rotationModeSymbol(_ mode: RotationMode) -> String {
+        switch mode {
+        case .sameOnAllDisplays: "rectangle.on.rectangle"
+        case .differentPerDisplay: "square.split.2x1"
+        }
     }
 
     private var nextButton: some View {

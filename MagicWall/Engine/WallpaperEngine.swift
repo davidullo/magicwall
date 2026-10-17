@@ -58,6 +58,10 @@ final class WallpaperEngine: ObservableObject {
     @Published private(set) var nextRotationDate: Date?
     /// Favorites already shown during the current rotation cycle.
     @Published private(set) var rotationShownVideoIDs: Set<String> = []
+    /// Cycle progress per display key, for the per-display strategy (UI only).
+    @Published private(set) var rotationShownVideoIDsByScreen: [String: Set<String>] = [:]
+    /// Whether every display shares one wallpaper or each runs its own cycle.
+    @Published private(set) var rotationMode: RotationMode = .default
 
     /// Fallback occlusion poll interval. Occlusion is normally event driven; the
     /// timer only covers the cases where the window server swallows the change.
@@ -70,6 +74,8 @@ final class WallpaperEngine: ObservableObject {
     private var occlusionTimer: Timer?
     private var rotationTimer: Timer?
     private var rotation = FavoritesRotation()
+    /// Independent cycle per display, used by ``RotationMode/differentPerDisplay``.
+    private var rotationsByScreen: [String: FavoritesRotation] = [:]
     private var powerSourceBox: PowerSourceCallbackBox?
     private var powerSourceRunLoopSource: CFRunLoopSource?
 
@@ -195,6 +201,10 @@ final class WallpaperEngine: ObservableObject {
             windowsByKey.removeValue(forKey: key)
         }
 
+        // Drop the per-display rotation progress of disconnected screens.
+        rotationsByScreen = rotationsByScreen.filter { currentKeys.contains($0.key) }
+        rotationShownVideoIDsByScreen = rotationShownVideoIDsByScreen.filter { currentKeys.contains($0.key) }
+
         // Update frames for connected screens (resolution changes, arrangement).
         for screen in screens {
             windowsByKey[screen.magicWallKey]?.updateFrame(for: screen)
@@ -202,6 +212,12 @@ final class WallpaperEngine: ObservableObject {
 
         refreshStatuses()
         reapplyPlaybackPolicy()
+
+        // A display just plugged in has no wallpaper yet: give it one now.
+        if rotationEnabled,
+           screens.contains(where: { windowsByKey[$0.magicWallKey]?.videoID == nil }) {
+            advanceRotation()
+        }
     }
 
     // MARK: - Favorites rotation
@@ -228,6 +244,16 @@ final class WallpaperEngine: ObservableObject {
         rotationInterval = interval
         persistRotationPreferences()
         if rotationEnabled { scheduleNextRotation() }
+    }
+
+    /// Switches between one wallpaper on every display and one per display.
+    /// Applying it right away (when the rotation is running) gives immediate
+    /// feedback instead of waiting for the next tick.
+    func setRotationMode(_ mode: RotationMode) {
+        guard mode != rotationMode else { return }
+        rotationMode = mode
+        persistRotationPreferences()
+        if rotationEnabled, isRunning { advanceRotation() }
     }
 
     /// Applies the next favorite right away (the "next" controls). Works
@@ -440,7 +466,7 @@ final class WallpaperEngine: ObservableObject {
 
     // MARK: - Rotation internals
 
-    /// Applies the next favorite and arms the timer for the following change.
+    /// Applies the next favorite(s) and arms the timer for the following change.
     private func advanceRotation() {
         guard isRunning else { return }
 
@@ -448,22 +474,58 @@ final class WallpaperEngine: ObservableObject {
         let eligible = favorites
             .filter { FileManager.default.fileExists(atPath: $0.filePath) }
             .map(\.id)
+        let videosByID = Dictionary(favorites.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
 
-        if let picked = rotation.next(from: eligible, avoiding: currentWallpaperVideoID),
-           let video = favorites.first(where: { $0.id == picked }) {
-            applyToAllScreens(video)
-            try? repository.markPlayed(id: video.id)
+        let screens = NSScreen.screens
+        let screenKeys = screens.map(\.magicWallKey)
+        var current: [String: String] = [:]
+        for key in screenKeys {
+            current[key] = windowsByKey[key]?.videoID
         }
 
-        rotationShownVideoIDs = rotation.shownVideoIDs
+        var generator = SystemRandomNumberGenerator()
+
+        switch rotationMode {
+        case .sameOnAllDisplays:
+            let picked = rotation.next(
+                from: eligible,
+                avoiding: Set(current.values),
+                using: &generator
+            )
+            if let picked, let video = videosByID[picked] {
+                applyToAllScreens(video)
+                try? repository.markPlayed(id: video.id)
+            }
+            rotationShownVideoIDs = rotation.shownVideoIDs
+            rotationShownVideoIDsByScreen = [:]
+
+        case .differentPerDisplay:
+            let picks = RotationPlanner().picks(
+                for: screenKeys,
+                eligible: eligible,
+                current: current,
+                rotations: &rotationsByScreen,
+                distinctAcrossScreens: true,
+                using: &generator
+            )
+            var applied: Set<String> = []
+            for (key, videoID) in picks {
+                guard
+                    let screen = screens.first(where: { $0.magicWallKey == key }),
+                    let video = videosByID[videoID]
+                else { continue }
+
+                apply(video, to: screen)
+                applied.insert(video.id)
+            }
+            for videoID in applied {
+                try? repository.markPlayed(id: videoID)
+            }
+            rotationShownVideoIDsByScreen = rotationsByScreen.mapValues(\.shownVideoIDs)
+        }
+
         persistRotationPreferences()
         scheduleNextRotation()
-    }
-
-    /// The video currently on screen (the same on every screen whenever it was
-    /// applied through the rotation).
-    private var currentWallpaperVideoID: String? {
-        windowsByKey.values.compactMap(\.videoID).first
     }
 
     private func scheduleNextRotation() {
@@ -495,7 +557,9 @@ final class WallpaperEngine: ObservableObject {
         let preferences = RotationPreferences(
             enabled: rotationEnabled,
             interval: rotationInterval,
-            shownVideoIDs: rotation.shownVideoIDs
+            shownVideoIDs: rotation.shownVideoIDs,
+            mode: rotationMode,
+            shownVideoIDsByScreen: rotationsByScreen.mapValues(\.shownVideoIDs)
         )
         try? repository.setSetting(RotationPreferences.storageKey, value: preferences.encoded())
     }
@@ -510,6 +574,15 @@ final class WallpaperEngine: ObservableObject {
         rotationInterval = preferences.interval
         rotation = FavoritesRotation(shownVideoIDs: preferences.shownVideoIDs)
         rotationShownVideoIDs = preferences.shownVideoIDs
+        rotationMode = preferences.mode
+
+        // Restore the per-display cycles, dropping the screens that are gone.
+        let connectedKeys = Set(NSScreen.screens.map(\.magicWallKey))
+        rotationsByScreen = preferences.shownVideoIDsByScreen.reduce(into: [:]) { result, entry in
+            guard connectedKeys.contains(entry.key) else { return }
+            result[entry.key] = FavoritesRotation(shownVideoIDs: entry.value)
+        }
+        rotationShownVideoIDsByScreen = rotationsByScreen.mapValues(\.shownVideoIDs)
 
         // On launch the restored wallpaper stays; the first change happens one
         // interval from now.

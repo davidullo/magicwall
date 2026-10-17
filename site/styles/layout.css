@@ -6,35 +6,53 @@
 
 /* the hero screen may run wider than the text columns */
 .wrap--screen {
-  max-width: 1500px;
+  max-width: 1600px;
 }
 
 /* ═══════════════════════════════ nav ═══════════════════════════════ */
 
+/* floating centred pill: not full-width, heavily rounded, compacts on scroll */
 .nav {
   position: fixed;
-  inset: 0 0 auto 0;
+  inset: var(--nav-offset) 0 auto 0; /* --nav-offset: 14px in tokens.css */
   z-index: 60;
-  background: transparent;
-  border-bottom: 1px solid transparent;
-  transition: background 0.3s var(--ease), box-shadow 0.3s var(--ease),
-    border-color 0.3s var(--ease);
+  padding-inline: var(--gutter);
+  pointer-events: none;
+  transition: inset 0.5s var(--ease);
 }
 
-.nav.is-scrolled,
-.nav.is-open {
-  background: rgba(253, 251, 252, 0.82);
-  backdrop-filter: blur(16px) saturate(1.5);
-  -webkit-backdrop-filter: blur(16px) saturate(1.5);
-  border-bottom-color: var(--line);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+.nav.is-scrolled {
+  inset-block-start: 8px;
 }
 
 .nav-inner {
+  pointer-events: auto;
   display: flex;
   align-items: center;
   gap: 18px;
+  max-width: 1120px;
   height: var(--nav-h);
+  padding-inline: 16px;
+  border: 1px solid var(--line-2);
+  border-radius: 20px;
+  background: rgba(253, 251, 252, 0.78);
+  backdrop-filter: blur(18px) saturate(1.6);
+  -webkit-backdrop-filter: blur(18px) saturate(1.6);
+  box-shadow: 0 12px 30px -20px rgba(185, 60, 127, 0.45),
+    0 2px 6px rgba(23, 19, 25, 0.04);
+  transition: height 0.5s var(--ease), box-shadow 0.3s var(--ease),
+    background 0.3s var(--ease);
+}
+
+.nav.is-scrolled .nav-inner,
+.nav.is-open .nav-inner {
+  background: rgba(253, 251, 252, 0.92);
+}
+
+.nav.is-scrolled .nav-inner {
+  height: 56px;
+  box-shadow: 0 16px 34px -20px rgba(185, 60, 127, 0.5),
+    0 3px 8px rgba(23, 19, 25, 0.05);
 }
 
 .brand {
@@ -83,6 +101,11 @@
   gap: 10px;
 }
 
+/* the nav download pill shortens its label on very narrow screens */
+.nav-cta-short {
+  display: none;
+}
+
 .nav-toggle {
   display: none;
   width: 38px;
@@ -117,13 +140,23 @@
 
 .nav-panel {
   display: none;
+  pointer-events: auto;
+  max-width: 1120px;
+  margin: 8px auto 0;
+  padding: 10px 16px 16px;
+  border: 1px solid var(--line-2);
+  border-radius: 20px;
+  background: rgba(253, 251, 252, 0.94);
+  backdrop-filter: blur(18px) saturate(1.6);
+  -webkit-backdrop-filter: blur(18px) saturate(1.6);
+  box-shadow: 0 18px 40px -24px rgba(185, 60, 127, 0.5);
 }
 
 /* ═════════════════════════ hero / mac screen ═════════════════════════ */
 
 .hero {
   position: relative;
-  padding-top: calc(var(--nav-h) + clamp(18px, 2.4vw, 40px));
+  padding-top: calc(var(--nav-h) + var(--nav-offset) + clamp(18px, 2.4vw, 40px));
   padding-bottom: clamp(56px, 7vw, 104px);
   overflow: clip;
 }
@@ -263,9 +296,13 @@
 /* ═════════════════════════════ footer ═════════════════════════════ */
 
 .footer {
+  position: relative;
   border-top: 1px solid var(--line);
-  background: var(--bg);
   padding-block: clamp(44px, 5vw, 66px) 26px;
+  background:
+    linear-gradient(180deg, rgba(253, 251, 252, 0.60) 0%, rgba(253, 251, 252, 0.70) 30%, rgba(253, 251, 252, 0.78) 100%),
+    url("../assets/media/footer-garden.jpg") center 40% / cover no-repeat,
+    var(--bg);
 }
 
 .footer-inner {
@@ -294,6 +331,7 @@
 
 .footer-brand .small {
   margin-top: 6px;
+  color: var(--ink-2);
 }
 
 .footer-cols {
@@ -313,12 +351,12 @@
   font-size: 0.66rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--ink-4);
+  color: var(--ink-2);
 }
 
 .footer-col a {
   font-size: 0.92rem;
-  color: var(--ink-2);
+  color: var(--ink);
   transition: color 0.18s var(--ease);
 }
 
@@ -333,7 +371,10 @@
   gap: 10px;
   margin-top: clamp(30px, 3.4vw, 46px);
   padding-top: 20px;
-  border-top: 1px solid var(--line);
+}
+
+.footer-base .small {
+  color: var(--ink-2);
 }
 
 /* ═════════════════════════ responsive ═════════════════════════ */
@@ -359,9 +400,6 @@
   .nav-panel {
     flex-direction: column;
     gap: 2px;
-    padding: 10px var(--gutter) 20px;
-    border-top: 1px solid var(--line);
-    box-shadow: var(--shadow-md);
   }
 
   .nav-panel a {
@@ -382,6 +420,16 @@
     color: var(--white);
     font-weight: 560;
     box-shadow: var(--shadow-pink);
+  }
+}
+
+@media (max-width: 520px) {
+  .nav-cta-long {
+    display: none;
+  }
+
+  .nav-cta-short {
+    display: inline;
   }
 }
 

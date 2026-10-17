@@ -68,6 +68,13 @@
 "rotation.noFavorites" = "Add favorites to start the rotation.";
 "rotation.interval.help" = "How often the wallpaper changes";
 "rotation.nextNow.help" = "Switch to the next favorite now";
+"rotation.mode.title" = "Wallpaper per display";
+"rotation.mode.same" = "Same wallpaper on all displays";
+"rotation.mode.different" = "A different wallpaper on each display";
+"rotation.mode.short.same" = "All displays";
+"rotation.mode.short.different" = "Per display";
+"rotation.mode.help" = "Choose whether every display shows the same favorite or its own.";
+"rotation.nextChange.different" = "Next change in %@ · %@";
 "rotation.interval.1" = "1 min";
 "rotation.interval.5" = "5 min";
 "rotation.interval.15" = "15 min";
@@ -156,6 +163,28 @@
 "settings.playback.pauseThermal" = "Pause under thermal pressure";
 "settings.playback.paused" = "Paused: %@";
 
+/* Starter wallpapers */
+"starter.section.title" = "Starter wallpapers";
+"starter.offer.title" = "Four wallpapers, ready to go";
+"starter.offer.message" = "Download four 4K video wallpapers (%@) and try MagicWall right away. You can skip this and import your own videos instead.";
+"starter.offer.download" = "Download (%@)";
+"starter.offer.later" = "Not now";
+"starter.download.progress" = "Downloading starter wallpapers… %d of %d (%@ of %@)";
+"starter.download.cancel" = "Cancel download";
+"starter.download.done.one" = "%d starter wallpaper added to your library.";
+"starter.download.done.other" = "%d starter wallpapers added to your library.";
+"starter.download.failed" = "Starter wallpapers could not be downloaded: %@";
+"starter.action.download" = "Download starter wallpapers";
+"starter.action.retry" = "Try again";
+"starter.action.remove" = "Remove starter wallpapers";
+"starter.state.available" = "Not downloaded";
+"starter.state.downloading" = "Downloading…";
+"starter.state.installed" = "Installed";
+"starter.state.partial" = "Incomplete";
+"starter.state.dismissed" = "Skipped";
+"starter.state.failed" = "Download failed";
+"starter.settings.hint" = "Four hand-picked wallpapers, downloaded once on request. They land in your library as favorites.";
+
 /* Settings — application */
 "settings.application.title" = "Application";
 
@@ -187,7 +216,7 @@
 
 /* Settings — about */
 "settings.about.version" = "Version";
-"settings.about.blurb" = "MagicWall — local video wallpapers for macOS. No cloud service: your videos stay on your Mac.";
+"settings.about.blurb" = "MagicWall — local video wallpapers for macOS. Your videos stay on your Mac: the only network access is the update check and the optional starter wallpapers.";
 
 /* Updates (Sparkle) */
 "update.check" = "Check for Updates…";

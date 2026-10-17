@@ -18,6 +18,15 @@ public enum RotationInterval: Int, CaseIterable, Codable, Sendable {
     public var timeInterval: TimeInterval { TimeInterval(rawValue * 60) }
 }
 
+/// Whether every display shares one wallpaper or each display runs its own cycle.
+public enum RotationMode: String, CaseIterable, Codable, Sendable {
+    case sameOnAllDisplays
+    case differentPerDisplay
+
+    /// Mode applied when the user never picked one.
+    public static let `default`: RotationMode = .sameOnAllDisplays
+}
+
 /// Progress of one rotation cycle across the favorites: every favorite is
 /// shown once before any of them repeats.
 public struct FavoritesRotation: Codable, Equatable, Sendable {
@@ -43,14 +52,24 @@ public struct FavoritesRotation: Codable, Equatable, Sendable {
         avoiding previous: String?,
         using generator: inout some RandomNumberGenerator
     ) -> String? {
+        next(from: eligible, avoiding: previous.map { [$0] } ?? [], using: &generator)
+    }
+
+    /// Deterministic variant that can rule out a whole set of ids at once —
+    /// used to keep the videos picked in the same tick distinct across displays.
+    public mutating func next(
+        from eligible: [String],
+        avoiding banned: Set<String>,
+        using generator: inout some RandomNumberGenerator
+    ) -> String? {
         // Favorites removed (or deleted) mid-cycle stop being eligible.
         shownVideoIDs.formIntersection(eligible)
 
-        var pool = eligible.filter { !shownVideoIDs.contains($0) }
+        var pool = eligible.filter { !shownVideoIDs.contains($0) && !banned.contains($0) }
         if pool.isEmpty {
             // Cycle complete: start over, avoiding an immediate repeat.
             shownVideoIDs.removeAll()
-            pool = eligible.filter { $0 != previous }
+            pool = eligible.filter { !banned.contains($0) }
             if pool.isEmpty { pool = eligible }
         }
 
@@ -68,15 +87,43 @@ public struct RotationPreferences: Codable, Equatable, Sendable {
     public var enabled: Bool
     public var interval: RotationInterval
     public var shownVideoIDs: Set<String>
+    /// Wallpaper strategy: one shared video or one per display.
+    public var mode: RotationMode
+    /// Per-display cycle progress, keyed by the display's screen key.
+    public var shownVideoIDsByScreen: [String: Set<String>]
 
     public init(
         enabled: Bool = false,
         interval: RotationInterval = .default,
-        shownVideoIDs: Set<String> = []
+        shownVideoIDs: Set<String> = [],
+        mode: RotationMode = .default,
+        shownVideoIDsByScreen: [String: Set<String>] = [:]
     ) {
         self.enabled = enabled
         self.interval = interval
         self.shownVideoIDs = shownVideoIDs
+        self.mode = mode
+        self.shownVideoIDsByScreen = shownVideoIDsByScreen
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case enabled
+        case interval
+        case shownVideoIDs
+        case mode
+        case shownVideoIDsByScreen
+    }
+
+    /// JSON persisted before `mode`/`shownVideoIDsByScreen` existed has neither
+    /// key: both decode to their defaults so old settings keep loading.
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.enabled = try container.decode(Bool.self, forKey: .enabled)
+        self.interval = try container.decode(RotationInterval.self, forKey: .interval)
+        self.shownVideoIDs = try container.decode(Set<String>.self, forKey: .shownVideoIDs)
+        self.mode = try container.decodeIfPresent(RotationMode.self, forKey: .mode) ?? .default
+        self.shownVideoIDsByScreen =
+            try container.decodeIfPresent([String: Set<String>].self, forKey: .shownVideoIDsByScreen) ?? [:]
     }
 
     /// JSON representation stored in `app_settings`.

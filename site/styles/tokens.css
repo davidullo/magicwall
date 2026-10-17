@@ -88,6 +88,7 @@
   --dur: 0.28s;
 
   --nav-h: 64px;
+  --nav-offset: 14px;
   color-scheme: light;
 }
 
@@ -217,12 +218,12 @@ hr {
 }
 
 .eyebrow {
-  font-family: var(--font-mono);
-  font-size: 0.688rem;
-  font-weight: 500;
-  letter-spacing: 0.14em;
+  font-family: var(--font-sans);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  /* pink-700 keeps the 11px label at ~5:1 on the page background */
+  /* pink-700 keeps this 13px label comfortably above 4.5:1 on the page background */
   color: var(--pink-700);
 }
 
@@ -231,15 +232,211 @@ hr {
   font-feature-settings: "tnum" 1;
 }
 
-/* pink gradient on the key half of a headline */
+/* animated rainbow gradient on the key phrase of a headline.
+   First and last stop share #ff5db1 so the loop wraps without a seam, and
+   background-size: 200% lets the animation shift exactly one full image.
+   The neon halo is a separate blurred copy (.grad-glow, see below) so it can
+   carry the same multicolour gradient — a single filter glow can only take
+   one colour. */
 .grad {
-  background-image: linear-gradient(168deg, #ff8cc9 0%, #f465b2 46%, #d9448f 100%);
+  background-image: linear-gradient(
+    100deg,
+    #ff5db1 0%,
+    #ff8a3d 16%,
+    #ffc93c 32%,
+    #46e08a 50%,
+    #4db5ff 66%,
+    #a97bff 83%,
+    #ff5db1 100%
+  );
+  background-size: 200% 100%;
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
   /* keeps descenders from being clipped by the text clip */
   display: inline-block;
   padding-bottom: 0.04em;
+  animation: grad-rainbow 4.5s linear infinite;
+}
+
+/* neon halo: a blurred copy of the phrase carrying the same animated
+   gradient, painted behind the crisp text. .grad-wrap needs
+   isolation: isolate, otherwise the negative z-index would escape behind the
+   white background of .site-mini and the halo would not show. */
+.grad-wrap {
+  position: relative;
+  display: inline-block;
+  isolation: isolate; /* keeps the negative z-index glow inside this box */
+}
+
+.grad-glow {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: linear-gradient(
+    100deg,
+    #ff5db1 0%,
+    #ff8a3d 16%,
+    #ffc93c 32%,
+    #46e08a 50%,
+    #4db5ff 66%,
+    #a97bff 83%,
+    #ff5db1 100%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: blur(12px) saturate(1.35);
+  opacity: 0.95;
+  animation: grad-rainbow 4.5s linear infinite;
+}
+
+@keyframes grad-rainbow {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+/* ---------- argent buttons: metallic pill (ported effect) ---------- */
+.argent {
+  --argent-grad: linear-gradient(135deg, #ffe8f4 0%, #ffb6dd 18%, #ff6fbb 42%, #99194f 52%, #ef6cb1 68%, #ffc9e6 88%, #fff2f8 100%);
+  --argent-text: #ffffff;
+  --argent-edge: rgba(255, 255, 255, 0.42);
+  --argent-panel: #2b0f22;
+  --argent-panel-text: #ffe9f5;
+  --argent-sheen: rgba(255, 255, 255, 0.55);
+  --argent-shadow: 0 12px 30px rgba(185, 60, 127, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.3), inset 0 -2px 3px rgba(60, 0, 30, 0.4);
+  --argent-bw: 2px;
+  --argent-halo: 4px;
+  --argent-radius: 999px;
+  --argent-halo-line: rgba(255, 255, 255, 0.35);
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  border: 1px solid var(--argent-edge);
+  border-radius: var(--argent-radius);
+  box-shadow: var(--argent-shadow);
+  color: var(--argent-text);
+  transition: transform 0.14s cubic-bezier(0.34, 1.5, 0.5, 1), box-shadow 0.2s var(--ease), filter 0.15s var(--ease);
+}
+
+.argent-fill {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  overflow: hidden;
+  background: var(--argent-grad);
+}
+
+.argent-core {
+  position: absolute;
+  inset: var(--argent-bw);
+  z-index: 1;
+  border-radius: inherit;
+  background: var(--argent-panel);
+  transition: opacity 0.5s var(--ease-out);
+}
+
+.argent-sheen {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(110deg, transparent 36%, var(--argent-sheen) 50%, transparent 64%);
+  background-size: 260% 100%;
+  background-position: -60% 0;
+  background-repeat: no-repeat;
+  opacity: 0;
+  mix-blend-mode: screen;
+  transition: background-position 0.6s var(--ease), opacity 0.3s var(--ease);
+}
+
+.argent::before {
+  content: "";
+  position: absolute;
+  inset: calc(-1 * var(--argent-halo));
+  z-index: -1;
+  border-radius: calc(var(--argent-radius) + var(--argent-halo));
+  border: 1px solid var(--argent-halo-line);
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.08);
+  pointer-events: none;
+}
+
+.argent:hover {
+  filter: brightness(1.04);
+  transform: translateY(-1px);
+}
+
+.argent:hover .argent-core {
+  opacity: 0.75;
+}
+
+.argent:focus-visible .argent-core {
+  opacity: 0.75;
+}
+
+.argent:active .argent-core {
+  opacity: 0.65;
+}
+
+.argent:active {
+  transform: translateY(1px) scale(0.99);
+  box-shadow: var(--argent-shadow), inset 0 3px 7px rgba(0, 0, 0, 0.42);
+}
+
+.argent:hover .argent-sheen {
+  opacity: 0.95;
+  background-position: 160% 0;
+}
+
+.argent:focus-visible {
+  outline: 2px solid var(--argent-edge);
+  outline-offset: 3px;
+}
+
+.argent-content {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 22px;
+  font-size: 0.92rem;
+  font-weight: 640;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  color: var(--argent-panel-text);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+  white-space: nowrap;
+}
+
+.argent-content svg {
+  display: block;
+  width: 1.05em;
+  height: 1.05em;
+  flex: 0 0 auto;
+}
+
+.argent--sm .argent-content {
+  padding: 8px 16px;
+  font-size: 0.86rem;
+}
+
+.argent--lg .argent-content {
+  padding: 13px 26px;
+  font-size: 1rem;
 }
 
 /* ---------- layout helpers ---------- */
@@ -307,5 +504,16 @@ hr {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
+  }
+
+  /* the neon halo stays, just frozen (animation-name is not touched by the
+     !important duration rule above) */
+  .grad-glow {
+    animation: none;
+  }
+
+  .argent:hover,
+  .argent:active {
+    transform: none;
   }
 }

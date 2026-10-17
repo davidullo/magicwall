@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "baseURL": "https://github.com/davidullo/magicwall/releases/download/starter-v1/",
+  "wallpapers": [
+    {
+      "id": "dreamscape",
+      "title": "Dreamscape",
+      "fileName": "dreamscape.mp4",
+      "sha256": "955b4e369c738e9682ac0df7f32dee46978930d245337fbc379b5839ffc39404",
+      "bytes": 8620205,
+      "width": 3840,
+      "height": 2160,
+      "duration": 12.37
+      
+    },
+    {
+      "id": "clover-rainbow",
+      "title": "Clover Rainbow",
+      "fileName": "clover-rainbow.mp4",
+      "sha256": "f7619816004dd8abcb40b632585bbeea5cf3e34c9f90a32ebb5ac8ce43bff342",
+      "bytes": 12609838,
+      "width": 3840,
+      "height": 2160,
+      "duration": 18.0
+      
+    },
+    {
+      "id": "aurora-forest",
+      "title": "Aurora Forest",
+      "fileName": "aurora-forest.mp4",
+      "sha256": "ee551e4d963a266af934a044a164db9042d5efc7f32827604e0172caa35063a2",
+      "bytes": 9761873,
+      "width": 3840,
+      "height": 2160,
+      "duration": 13.95
+      
+    },
+    {
+      "id": "cherry-blossom-spring",
+      "title": "Cherry Blossom Spring",
+      "fileName": "cherry-blossom-spring.mp4",
+      "sha256": "5e5ff85bbc9ba073e63860cfb2c9c9180fe23b76bcb1b0f62e23199290e1d7a1",
+      "bytes": 9236489,
+      "width": 3840,
+      "height": 2160,
+      "duration": 13.17
+      
+    }
+  ]
+}

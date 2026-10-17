@@ -124,10 +124,32 @@ struct MenuBarMenuView: View {
 
             Divider()
 
+            ForEach(RotationMode.allCases, id: \.self) { mode in
+                Button {
+                    engine.setRotationMode(mode)
+                } label: {
+                    if mode == engine.rotationMode {
+                        Label(rotationModeLabel(mode), systemImage: "checkmark")
+                    } else {
+                        Text(rotationModeLabel(mode))
+                    }
+                }
+            }
+
+            Divider()
+
             Button(L("menubar.rotation.next")) {
                 engine.advanceRotationNow()
             }
             .disabled(viewModel.favoriteIDs.isEmpty)
+        }
+    }
+
+    /// Localized name of a rotation mode for the submenu items.
+    private func rotationModeLabel(_ mode: RotationMode) -> String {
+        switch mode {
+        case .sameOnAllDisplays: L("rotation.mode.same")
+        case .differentPerDisplay: L("rotation.mode.different")
         }
     }
 
