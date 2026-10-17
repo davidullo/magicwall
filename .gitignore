@@ -25,3 +25,4 @@ site/.vercel/
 
 # Dev fixtures (generated test media)
 DevFixtures/
+.vercel

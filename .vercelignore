@@ -1,0 +1,6 @@
+# The Vercel project's root directory is site/, so only that folder has to be
+# uploaded. Without this the CLI walks the whole repository (build/, dist/,
+# .git/, Packages/) and hits the 15.000-file upload limit.
+*
+!site
+!site/**
