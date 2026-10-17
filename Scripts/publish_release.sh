@@ -27,8 +27,8 @@
 #   --skip-tests     skip the core test suite
 #   --with-e2e       also run the XCUITest suite before building
 #   --no-publish     build, sign, notarize and generate the appcast, but do
-#                    not create the GitHub release (nothing is pushed either
-#                    unless it is a normal build run)
+#                    not create the GitHub release (the version bump is still
+#                    committed and pushed unless --no-commit/--no-push)
 #   --no-push        commit locally but do not push
 #   --no-commit      do not touch git at all
 #
