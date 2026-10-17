@@ -227,8 +227,7 @@ write_manifest() {
             printf '      "bytes": %s,\n' "$bytes"
             printf '      "width": %s,\n' "$width"
             printf '      "height": %s,\n' "$height"
-            printf '      "duration": %s,\n' "$duration"
-            printf '      \n'
+            printf '      "duration": %s\n' "$duration"
             printf '    }%s\n' "$([[ "$index" -lt "$total" ]] && echo ',' || echo '')"
         done
         echo "  ]"

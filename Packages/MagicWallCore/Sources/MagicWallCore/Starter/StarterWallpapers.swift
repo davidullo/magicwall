@@ -10,7 +10,6 @@ public struct StarterWallpaper: Codable, Identifiable, Hashable, Sendable {
     public var width: Int
     public var height: Int
     public var duration: Double
-    public var credit: String?
 
     public init(
         id: String,
@@ -20,8 +19,7 @@ public struct StarterWallpaper: Codable, Identifiable, Hashable, Sendable {
         bytes: Int64,
         width: Int,
         height: Int,
-        duration: Double,
-        credit: String? = nil
+        duration: Double
     ) {
         self.id = id
         self.title = title
@@ -31,7 +29,6 @@ public struct StarterWallpaper: Codable, Identifiable, Hashable, Sendable {
         self.width = width
         self.height = height
         self.duration = duration
-        self.credit = credit
     }
 }
 

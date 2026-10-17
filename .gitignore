@@ -20,6 +20,12 @@ Packages/MagicWallCore/Package.resolved
 # Local agent configuration
 .opencode/
 
+# Local planning notes (kept out of the public repo)
+TODO.md
+
+# Optional local source folder for Scripts/starter-media.sh
+starter-input/
+
 # Vercel project link (site/)
 site/.vercel/
 

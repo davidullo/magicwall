@@ -11,7 +11,6 @@
       "width": 3840,
       "height": 2160,
       "duration": 12.37
-      
     },
     {
       "id": "clover-rainbow",
@@ -22,7 +21,6 @@
       "width": 3840,
       "height": 2160,
       "duration": 18.0
-      
     },
     {
       "id": "aurora-forest",
@@ -33,7 +31,6 @@
       "width": 3840,
       "height": 2160,
       "duration": 13.95
-      
     },
     {
       "id": "cherry-blossom-spring",
@@ -44,7 +41,6 @@
       "width": 3840,
       "height": 2160,
       "duration": 13.17
-      
     }
   ]
 }
