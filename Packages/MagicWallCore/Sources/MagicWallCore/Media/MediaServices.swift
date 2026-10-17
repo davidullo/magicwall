@@ -38,13 +38,20 @@ public struct AVMediaProbe: MediaProbing {
         let attributes = try? FileManager.default.attributesOfItem(atPath: url.path)
         let fileSize = (attributes?[.size] as? NSNumber)?.int64Value ?? 0
 
+        let seconds = duration.seconds
+        var bitrate = Int(estimatedDataRate)
+        // Some containers don't carry a data rate: estimate it from size/duration.
+        if bitrate <= 0, seconds.isFinite, seconds > 0, fileSize > 0 {
+            bitrate = Int((Double(fileSize) * 8 / seconds).rounded())
+        }
+
         return MediaMetadata(
-            duration: duration.seconds.isFinite ? duration.seconds : 0,
+            duration: seconds.isFinite ? seconds : 0,
             width: width,
             height: height,
             fps: nominalFPS,
             codec: Self.codecName(for: formatDescriptions.first),
-            bitrate: Int(estimatedDataRate),
+            bitrate: bitrate,
             fileSize: fileSize
         )
     }
@@ -77,6 +84,7 @@ public struct AVMediaProbe: MediaProbing {
 public struct SHA256Hasher: FileHashing {
     public init() {}
 
+    /// Streams the file in 4 MB chunks so large videos never get loaded in memory.
     public func sha256(of url: URL) async throws -> String {
         guard let handle = try? FileHandle(forReadingFrom: url) else {
             throw MediaError.notReadable(url)
@@ -106,7 +114,8 @@ public struct AVPosterGenerator: ThumbnailGenerating {
     ) async throws {
         let asset = AVURLAsset(url: videoURL)
         let duration = try await asset.load(.duration)
-        guard duration.seconds.isFinite, duration.seconds > 0 else {
+        let seconds = duration.seconds
+        guard seconds.isFinite, seconds > 0 else {
             throw MediaError.posterGenerationFailed(videoURL)
         }
 
@@ -116,33 +125,77 @@ public struct AVPosterGenerator: ThumbnailGenerating {
         generator.requestedTimeToleranceBefore = CMTime(seconds: 0.5, preferredTimescale: 600)
         generator.requestedTimeToleranceAfter = CMTime(seconds: 0.5, preferredTimescale: 600)
 
-        // A frame at ~10% of the video is usually more representative than frame 0.
-        let fallbackTime = min(max(duration.seconds * 0.10, 0), max(duration.seconds - 0.1, 0))
-        let requested = time ?? fallbackTime
-        let cmTime = CMTime(seconds: requested, preferredTimescale: 600)
+        // Primary request: an explicit time, or ~10% into the video (more
+        // representative than frame 0). Very short clips just use 0s.
+        let requested: Double
+        if let time {
+            requested = time
+        } else if seconds < 1.0 {
+            requested = 0
+        } else {
+            requested = min(max(seconds * 0.10, 0), max(seconds - 0.1, 0))
+        }
 
-        let cgImage: CGImage
-        do {
-            cgImage = try await generator.image(at: cmTime).image
-        } catch {
-            mediaLog.error("Poster generation failed for \(videoURL.lastPathComponent, privacy: .public): \(String(describing: error), privacy: .public)")
+        // Fallbacks: 0s then 1s (for clips long enough to have a frame there).
+        var candidates: [Double] = [requested, 0]
+        if seconds >= 1.0 { candidates.append(1) }
+
+        var cgImage: CGImage?
+        var seen = Set<Int64>()
+        var lastError: Error?
+        for candidate in candidates {
+            let clamped = min(max(candidate, 0), max(seconds - 0.001, 0))
+            let key = Int64((clamped * 1000).rounded())
+            guard seen.insert(key).inserted else { continue }
+
+            let cmTime = CMTime(seconds: clamped, preferredTimescale: 600)
+            do {
+                cgImage = try await generator.image(at: cmTime).image
+                break
+            } catch {
+                lastError = error
+                mediaLog.warning(
+                    "Poster frame at \(clamped, privacy: .public)s failed for \(videoURL.lastPathComponent, privacy: .public): \(String(describing: error), privacy: .public)"
+                )
+            }
+        }
+
+        guard let cgImage else {
+            mediaLog.error(
+                "Poster generation failed for \(videoURL.lastPathComponent, privacy: .public): \(String(describing: lastError), privacy: .public)"
+            )
             throw MediaError.posterGenerationFailed(videoURL)
         }
 
-        try AppPaths.ensureDirectories()
-        guard let imageDestination = CGImageDestinationCreateWithURL(
-            destination as CFURL,
-            UTType.jpeg.identifier as CFString,
-            1,
-            nil
-        ) else {
-            throw MediaError.posterGenerationFailed(videoURL)
+        let data = try Self.encodeJPEG(cgImage, sourceURL: videoURL)
+
+        // Create the destination directory if needed, then write atomically.
+        let directory = destination.deletingLastPathComponent()
+        if !FileManager.default.fileExists(atPath: directory.path) {
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         }
+        try data.write(to: destination, options: .atomic)
+    }
+
+    /// Encodes a frame to JPEG bytes in memory so the file can be written atomically.
+    private static func encodeJPEG(_ image: CGImage, sourceURL: URL) throws -> Data {
+        guard let mutableData = CFDataCreateMutable(nil, 0),
+              let imageDestination = CGImageDestinationCreateWithData(
+                  mutableData,
+                  UTType.jpeg.identifier as CFString,
+                  1,
+                  nil
+              )
+        else {
+            throw MediaError.posterGenerationFailed(sourceURL)
+        }
+
         let options: [CFString: Any] = [kCGImageDestinationLossyCompressionQuality: 0.85]
-        CGImageDestinationAddImage(imageDestination, cgImage, options as CFDictionary)
+        CGImageDestinationAddImage(imageDestination, image, options as CFDictionary)
         guard CGImageDestinationFinalize(imageDestination) else {
-            throw MediaError.posterGenerationFailed(videoURL)
+            throw MediaError.posterGenerationFailed(sourceURL)
         }
+        return mutableData as Data
     }
 }
 
@@ -218,12 +271,18 @@ public struct VideoImportService: VideoImporting {
         defer { if accessing { url.stopAccessingSecurityScopedResource() } }
 
         let ext = url.pathExtension.lowercased()
+        // Unsupported files are skipped silently.
         guard AppPaths.supportedVideoExtensions.contains(ext) else { return nil }
 
-        let metadata = try await prober.probe(url: url)
-        let hash = try await hasher.sha256(of: url)
+        // Hash off the cooperative pool: reads the whole file, possibly from a
+        // network volume.
+        let hasher = self.hasher
+        let hash = try await Task.detached(priority: .utility) {
+            try await hasher.sha256(of: url)
+        }.value
 
-        // Already in the library? Return the existing record.
+        // Dedup: the file is already in the library, return the existing record
+        // without copying it again.
         if let existing = try repository.video(contentHash: hash) {
             return existing
         }
@@ -231,37 +290,73 @@ public struct VideoImportService: VideoImporting {
         let id = UUID().uuidString
         try AppPaths.ensureDirectories()
         let destination = AppPaths.managedVideoDestination(id: id, fileExtension: ext)
-        if FileManager.default.fileExists(atPath: destination.path) {
-            try FileManager.default.removeItem(at: destination)
-        }
-        try FileManager.default.copyItem(at: url, to: destination)
-
-        var posterPath: String?
         let posterDestination = AppPaths.posterDestination(for: id)
-        do {
-            try await posters.makePoster(for: destination, to: posterDestination, maxWidth: 1280, at: nil)
-            posterPath = posterDestination.path
-        } catch {
-            mediaLog.warning("Poster generation skipped for \(url.lastPathComponent, privacy: .public)")
-        }
+        let originalCreationDate = Self.creationDate(of: url)
 
-        var video = Video(
-            id: id,
-            title: url.deletingPathExtension().lastPathComponent,
-            filePath: destination.path,
-            duration: metadata.duration,
-            width: metadata.width,
-            height: metadata.height,
-            fps: metadata.fps,
-            codec: metadata.codec,
-            bitrate: metadata.bitrate,
-            fileSize: metadata.fileSize,
-            contentHash: hash,
-            posterPath: posterPath
-        )
-        video.createdAt = Date()
-        video.importedAt = Date()
-        try repository.save(video)
-        return video
+        // Copy off the cooperative pool, preserving the original creation date.
+        try await Task.detached(priority: .utility) {
+            let fm = FileManager.default
+            if fm.fileExists(atPath: destination.path) {
+                try fm.removeItem(at: destination)
+            }
+            try fm.copyItem(at: url, to: destination)
+            if let originalCreationDate {
+                try? fm.setAttributes([.creationDate: originalCreationDate], ofItemAtPath: destination.path)
+            }
+        }.value
+
+        // Anything after the copy is transactional: on failure remove the copied
+        // file and any partial poster, then rethrow.
+        do {
+            // Probe the *copy*: the original may live on an unreachable/network volume.
+            let metadata = try await prober.probe(url: destination)
+
+            var posterPath: String?
+            do {
+                try await posters.makePoster(for: destination, to: posterDestination, maxWidth: 1280, at: nil)
+                posterPath = posterDestination.path
+            } catch {
+                // A missing poster is not fatal; keep the video.
+                mediaLog.warning("Poster generation skipped for \(url.lastPathComponent, privacy: .public)")
+            }
+
+            var video = Video(
+                id: id,
+                title: url.deletingPathExtension().lastPathComponent,
+                filePath: destination.path,
+                duration: metadata.duration,
+                width: metadata.width,
+                height: metadata.height,
+                fps: metadata.fps,
+                codec: metadata.codec,
+                bitrate: metadata.bitrate,
+                fileSize: metadata.fileSize,
+                contentHash: hash,
+                posterPath: posterPath
+            )
+            video.createdAt = Date()
+            video.importedAt = Date()
+            try repository.save(video)
+            return video
+        } catch {
+            Self.rollback(video: destination, poster: posterDestination)
+            throw error
+        }
+    }
+
+    /// Removes artifacts of a failed import. Best-effort: never throws.
+    private static func rollback(video: URL, poster: URL) {
+        let fm = FileManager.default
+        if fm.fileExists(atPath: video.path) {
+            try? fm.removeItem(at: video)
+        }
+        if fm.fileExists(atPath: poster.path) {
+            try? fm.removeItem(at: poster)
+        }
+    }
+
+    private static func creationDate(of url: URL) -> Date? {
+        let attributes = try? FileManager.default.attributesOfItem(atPath: url.path)
+        return attributes?[.creationDate] as? Date
     }
 }

@@ -18,11 +18,28 @@ extension NSScreen {
 
 /// Fullscreen, borderless, non-interactive window that plays a looping video
 /// at the desktop level (above the wallpaper, below desktop icons).
+///
+/// One window — and therefore at most one `AVQueuePlayer` — exists per screen.
+/// An emptied window holds no player at all, and re-showing the same video is
+/// a no-op on the media pipeline so the decoder keeps its buffers.
 final class WallpaperDesktopWindow: NSWindow {
     private let playerLayer = AVPlayerLayer()
     private var queuePlayer: AVQueuePlayer?
     private var looper: AVPlayerLooper?
     private(set) var videoID: String?
+
+    /// Invoked on the main thread when the desktop window's occlusion state
+    /// changes. Owned by ``WallpaperEngine``; the callback only reads live
+    /// state, so a spurious call is harmless.
+    var onOcclusionStateChanged: (() -> Void)?
+
+    /// `true` when the window has a video but is not visible on screen, i.e.
+    /// something (a fullscreen app, another space, a maximised window) covers
+    /// the desktop. Reads live state so it is correct even if the delegate
+    /// callback never fires.
+    var isDesktopOccluded: Bool {
+        videoID != nil && !occlusionState.contains(.visible)
+    }
 
     init(screen: NSScreen) {
         super.init(
@@ -55,33 +72,59 @@ final class WallpaperDesktopWindow: NSWindow {
 
         contentView = host
         setFrame(screen.frame, display: false)
+        delegate = self
     }
 
+    /// Displays `video`, reusing the running player when it already plays the
+    /// very same item (cheap re-apply from the UI, wake recovery, …).
     func show(video: Video) {
-        loadPlayer(for: video.fileURL)
-        videoID = video.id
+        if videoID != video.id || queuePlayer == nil {
+            loadPlayer(for: video.fileURL)
+            videoID = video.id
+        }
         alphaValue = 1
         orderFrontRegardless()
     }
 
-    func setPaused(_ paused: Bool) {
+    /// Starts or suspends decoding. Never allocates or tears down the player.
+    func setPlaying(_ playing: Bool) {
         guard let queuePlayer else { return }
-        if paused {
-            if queuePlayer.rate != 0 { queuePlayer.pause() }
-        } else {
+        if playing {
             if queuePlayer.rate == 0 { queuePlayer.play() }
+        } else {
+            if queuePlayer.rate != 0 { queuePlayer.pause() }
         }
     }
 
+    /// Backwards-compatible shim for the older pause-only entry point.
+    func setPaused(_ paused: Bool) {
+        setPlaying(!paused)
+    }
+
+    /// Stops playback, releases the player and hides the window. The window
+    /// itself is kept alive by the engine so it can be reused later.
     func clear() {
-        queuePlayer?.pause()
-        looper?.disableLooping()
-        looper = nil
-        queuePlayer = nil
-        playerLayer.player = nil
+        teardownPlayer()
         videoID = nil
         alphaValue = 0
         orderOut(nil)
+    }
+
+    /// Re-asserts level and stacking after a display/system wake and after the
+    /// window server rebuilt the desktop layers. No-op while empty.
+    func reassertOnWake() {
+        guard videoID != nil else { return }
+        level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.desktopWindow)))
+        orderFrontRegardless()
+    }
+
+    /// Final teardown before the app quits. Idempotent.
+    func prepareForTermination() {
+        teardownPlayer()
+        videoID = nil
+        onOcclusionStateChanged = nil
+        delegate = nil
+        alphaValue = 0
     }
 
     func updateFrame(for screen: NSScreen) {
@@ -92,9 +135,26 @@ final class WallpaperDesktopWindow: NSWindow {
 
     // MARK: - Private
 
-    private func loadPlayer(for url: URL) {
-        queuePlayer?.pause()
+    private func teardownPlayer() {
+        if let queuePlayer {
+            queuePlayer.rate = 0
+            queuePlayer.pause()
+        }
         looper?.disableLooping()
+        looper = nil
+        queuePlayer = nil
+        playerLayer.player = nil
+    }
+
+    private func loadPlayer(for url: URL) {
+        if let queuePlayer {
+            queuePlayer.rate = 0
+            queuePlayer.pause()
+        }
+        looper?.disableLooping()
+        looper = nil
+        queuePlayer = nil
+        playerLayer.player = nil
 
         let item = AVPlayerItem(url: url)
         let player = AVQueuePlayer()
@@ -109,5 +169,13 @@ final class WallpaperDesktopWindow: NSWindow {
         queuePlayer = player
         looper = newLooper
         player.play()
+    }
+}
+
+// MARK: - NSWindowDelegate
+
+extension WallpaperDesktopWindow: NSWindowDelegate {
+    func windowDidChangeOcclusionState(_ notification: Notification) {
+        onOcclusionStateChanged?()
     }
 }

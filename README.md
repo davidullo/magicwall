@@ -5,11 +5,25 @@ esterne a runtime oltre a GRDB (SQLite).
 
 ## Stato
 
-- **M1** (fondamenta): ✅ progetto, schema DB, import video, poster, libreria base
-- **M2** (engine): ✅ baseline funzionante — finestre desktop-level per schermo con
-  loop gapless, persistenza per-monitor, restore all'avvio (hardening policy in corso)
-- **M3** (UI Netflix-style + transcode): in corso
-- **M4** (hardening/benchmark): da fare
+- **M1** (fondamenta): ✅ progetto, schema DB, import video, poster, libreria
+- **M2** (engine): ✅ finestre desktop-level per schermo, loop gapless, persistenza
+  per-monitor, restore all'avvio, policy energia (batteria / risparmio energetico /
+  pressione termica / schermo bloccato / sleep / occlusione desktop), recovery al wake
+- **M3** (UI Netflix-style): ✅ top bar + hero + caroselli + Explore + preview fullscreen;
+  ⏳ transcode HEVC (da fare)
+- **M4** (hardening/benchmark): in corso — misure: ~0.5–3.5% CPU, ~130 MB RSS con un 1080p
+- **M5** (community): futuro
+
+## Come si usa
+
+1. Apri MagicWall → "+" (o trascina file/cartelle MP4/MOV nella finestra).
+2. Nella card premi play → preview; "Riproduci come wallpaper" per applicarlo a tutti
+   gli schermi (o tasto destro → "Set on Screen" per un singolo monitor).
+3. L'app resta nel menu bar: pausa, shuffle, preferiti, stop. Da Impostazioni →
+   Riproduzione puoi regolare le pause automatiche (batteria, risparmio energetico,
+   pressione termica, schermo bloccato, desktop nascosto).
+4. Gli assegnamenti per schermo sopravvivono al riavvio e vengono ripristinati
+   automaticamente.
 
 ## Requisiti
 
@@ -44,7 +58,8 @@ cd Packages/MagicWallCore && swift test
 MagicWall/                    app target (SwiftUI, non sandboxed)
 ├── App/                      entrypoint, wiring, view model
 ├── UI/                       viste della libreria (stile Netflix)
-├── Engine/                   engine wallpaper (NSWindow desktop-level + AVPlayerLooper)
+├── Engine/                   engine wallpaper (NSWindow desktop-level, AVPlayerLooper,
+│                             PlaybackPolicy: batteria/lock/termico/occlusione/wake)
 ├── MenuBar/                  menu bar extra
 ├── Settings/                 finestra impostazioni
 └── Services/                 login item (SMAppService)

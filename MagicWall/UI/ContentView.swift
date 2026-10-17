@@ -1,237 +1,296 @@
+import AppKit
 import MagicWallCore
 import SwiftUI
 import UniformTypeIdentifiers
 
+/// Root view of the library window.
+///
+/// Owns nothing but presentation state: the current tab, the previewed video,
+/// drag & drop targeting and a cached map of video → category IDs (rebuilt only
+/// when the library actually changes, never while scrolling).
 struct ContentView: View {
     @EnvironmentObject private var viewModel: LibraryViewModel
     @EnvironmentObject private var engine: WallpaperEngine
 
-    @State private var sidebarSelection: String = "all"
+    @State private var tab: AppTab = .home
+    @State private var previewVideo: Video?
     @State private var isDropTargeted = false
-    @State private var showingNewCategory = false
+    @State private var membership: [String: Set<Int64>] = [:]
+
+    @State private var isNamingCategory = false
     @State private var newCategoryName = ""
 
-    private let columns = [GridItem(.adaptive(minimum: 240, maximum: 340), spacing: 18)]
-
     var body: some View {
-        NavigationSplitView {
-            sidebar
-        } detail: {
-            detail
+        ZStack(alignment: .top) {
+            MagicWallTheme.background.ignoresSafeArea()
+
+            VStack(spacing: 0) {
+                MagicWallTopBar(
+                    tab: $tab,
+                    onImport: { viewModel.presentImportPanel() },
+                    onShuffle: { viewModel.applyRandomToAllScreens() }
+                )
+                Divider().overlay(MagicWallTheme.stroke)
+                content
+            }
+
+            overlays
         }
-        .overlay(alignment: .top) { banner }
+        .environment(\.libraryDidMutate, { rebuildMembership() })
+        .frame(minWidth: 980, minHeight: 620)
+        .preferredColorScheme(.dark)
+        .toolbar { overflowToolbar }
+        .task { rebuildMembership() }
+        .onChange(of: viewModel.videos) { _, _ in rebuildMembership() }
+        .onChange(of: viewModel.categories) { _, _ in rebuildMembership() }
+        .onChange(of: tab) { _, newTab in
+            if newTab == .library {
+                viewModel.refresh()
+            }
+        }
         .onDrop(of: [UTType.fileURL.identifier], isTargeted: $isDropTargeted) { providers in
             Task { await handleDrop(providers) }
             return true
         }
-        .alert("New VideoCategory", isPresented: $showingNewCategory) {
-            TextField("Name", text: $newCategoryName)
-            Button("Create") {
-                viewModel.createCategory(named: newCategoryName)
-                newCategoryName = ""
-            }
-            Button("Cancel", role: .cancel) { newCategoryName = "" }
+        .alert("Nuova categoria", isPresented: $isNamingCategory) {
+            TextField("Nome", text: $newCategoryName)
+            Button("Crea") { createCategory() }
+            Button("Annulla", role: .cancel) { newCategoryName = "" }
+        } message: {
+            Text("Raggruppa i tuoi wallpaper per tema, stile o luminosità.")
         }
     }
 
-    // MARK: - Sidebar
-
-    private var sidebar: some View {
-        List(selection: $sidebarSelection) {
-            Section("Library") {
-                Label("All Videos", systemImage: "square.grid.2x2")
-                    .tag("all")
-                Label("Favorites", systemImage: "heart.fill")
-                    .tag("favorites")
-            }
-            Section("Categories") {
-                ForEach(viewModel.categories) { category in
-                    Label(category.name, systemImage: "tag")
-                        .tag(category.slug)
-                        .contextMenu {
-                            Button("Delete VideoCategory", role: .destructive) {
-                                viewModel.deleteCategory(category)
-                            }
-                        }
-                }
-            }
-        }
-        .listStyle(.sidebar)
-        .safeAreaInset(edge: .bottom) {
-            HStack {
-                Button {
-                    showingNewCategory = true
-                } label: {
-                    Label("New VideoCategory", systemImage: "plus")
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(.secondary)
-                Spacer()
-            }
-            .padding(12)
-        }
-        .onChange(of: sidebarSelection) { _, newValue in
-            sidebarSelectionChanged(to: newValue)
-        }
-        .frame(minWidth: 200)
-    }
-
-    private func sidebarSelectionChanged(to newValue: String) {
-        switch newValue {
-        case "all":
-            viewModel.showsFavoritesOnly = false
-            viewModel.selectedCategorySlug = nil
-            viewModel.refresh()
-        case "favorites":
-            viewModel.showsFavoritesOnly = true
-            viewModel.selectedCategorySlug = nil
-            viewModel.refresh()
-        default:
-            viewModel.showsFavoritesOnly = false
-            viewModel.selectedCategorySlug = newValue
-            viewModel.refresh()
-        }
-    }
-
-    // MARK: - Detail
-
-    private var detail: some View {
-        ScrollView {
-            if viewModel.displayVideos.isEmpty {
-                emptyState
-            } else {
-                LazyVGrid(columns: columns, alignment: .leading, spacing: 18) {
-                    ForEach(viewModel.displayVideos) { video in
-                        card(for: video)
-                    }
-                }
-                .padding(24)
-            }
-        }
-        .searchable(text: $viewModel.searchText, placement: .toolbar, prompt: "Search videos")
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button {
-                    viewModel.presentImportPanel()
-                } label: {
-                    Label("Import", systemImage: "plus")
-                }
-                .disabled(viewModel.isImporting)
-                .help("Import videos (or drop files anywhere in the window)")
-            }
-            ToolbarItem(placement: .automatic) {
-                Button {
-                    viewModel.applyRandomToAllScreens()
-                } label: {
-                    Label("Random Wallpaper", systemImage: "shuffle")
-                }
-                .disabled(viewModel.videos.isEmpty)
-            }
-        }
-        .navigationTitle(navigationTitle)
-    }
-
-    private var navigationTitle: String {
-        if viewModel.showsFavoritesOnly { return "Favorites" }
-        if let slug = viewModel.selectedCategorySlug,
-           let category = viewModel.categories.first(where: { $0.slug == slug }) {
-            return category.name
-        }
-        return "All Videos"
-    }
-
-    private var emptyState: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "film.stack")
-                .font(.system(size: 44))
-                .foregroundStyle(.tertiary)
-            Text("No videos yet")
-                .font(.title3.weight(.semibold))
-            Text("Drop MP4/MOV files here or click + to import them.\nThen press play on a video to set it as your wallpaper.")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.top, 120)
-    }
-
-    private func card(for video: Video) -> some View {
-        VideoCard(
-            video: video,
-            isFavorite: viewModel.favoriteIDs.contains(video.id),
-            isApplied: engine.statuses.contains { $0.videoID == video.id },
-            onApply: { viewModel.applyToAllScreens(video) },
-            onToggleFavorite: { viewModel.toggleFavorite(video) }
-        )
-        .contextMenu {
-            Button("Set as Wallpaper (All Screens)") {
-                viewModel.applyToAllScreens(video)
-            }
-            if engine.statuses.count > 1 {
-                Menu("Set on Screen") {
-                    ForEach(engine.statuses) { status in
-                        Button(status.name) {
-                            apply(video: video, toScreenKey: status.id)
-                        }
-                    }
-                }
-            }
-            Divider()
-            Menu("Categories") {
-                ForEach(viewModel.categories) { category in
-                    let assigned = viewModel.categories(for: video).contains { $0.id == category.id }
-                    Toggle(category.name, isOn: Binding(
-                        get: { assigned },
-                        set: { _ in viewModel.toggleCategory(category, for: video) }
-                    ))
-                }
-            }
-            Divider()
-            Button(viewModel.favoriteIDs.contains(video.id) ? "Remove from Favorites" : "Add to Favorites") {
-                viewModel.toggleFavorite(video)
-            }
-            Button("Delete", role: .destructive) {
-                viewModel.delete(video)
-            }
-        }
-    }
-
-    private func apply(video: Video, toScreenKey screenKey: String) {
-        guard let screen = NSScreen.screens.first(where: { $0.magicWallKey == screenKey }) else { return }
-        engine.apply(video, to: screen)
-        viewModel.statusMessage = "“\(video.title)” applied to \(screen.magicWallName)."
-    }
-
-    // MARK: - Banner
+    // MARK: - Tab content
 
     @ViewBuilder
-    private var banner: some View {
-        if isDropTargeted {
-            bannerLabel("Drop videos to import", icon: "arrow.down.circle.fill", color: .accentColor)
-        } else if let error = viewModel.lastError {
-            bannerLabel(error, icon: "exclamationmark.triangle.fill", color: .red)
-        } else if let message = viewModel.statusMessage {
-            bannerLabel(message, icon: "checkmark.circle.fill", color: .green)
-                .task(id: message) {
-                    try? await Task.sleep(nanoseconds: 4_000_000_000)
-                    if viewModel.statusMessage == message {
-                        viewModel.statusMessage = nil
-                    }
-                }
+    private var content: some View {
+        let query = viewModel.searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if !query.isEmpty {
+            searchResults(query: query)
+        } else {
+            switch tab {
+            case .home:
+                HomeView(
+                    videos: viewModel.videos,
+                    membership: membership,
+                    onOpen: open,
+                    onNewCategory: beginCategoryCreation
+                )
+            case .explore:
+                ExploreView(
+                    videos: viewModel.videos,
+                    membership: membership,
+                    onOpen: open,
+                    onNewCategory: beginCategoryCreation
+                )
+            case .library:
+                LibraryView(
+                    videos: viewModel.videos,
+                    membership: membership,
+                    onOpen: open,
+                    onNewCategory: beginCategoryCreation
+                )
+            case .favorites:
+                FavoritesView(
+                    videos: viewModel.videos.filter { viewModel.favoriteIDs.contains($0.id) },
+                    membership: membership,
+                    onOpen: open,
+                    onNewCategory: beginCategoryCreation
+                )
+            }
         }
     }
 
-    private func bannerLabel(_ text: String, icon: String, color: Color) -> some View {
-        Label(text, systemImage: icon)
-            .font(.callout)
-            .foregroundStyle(.primary)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 8)
-            .background(.ultraThinMaterial, in: Capsule())
-            .overlay(Capsule().strokeBorder(color.opacity(0.4), lineWidth: 1))
-            .padding(.top, 12)
-            .transition(.move(edge: .top).combined(with: .opacity))
+    private func searchResults(query: String) -> some View {
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 22) {
+                SectionHeader(
+                    title: "Risultati per “\(query)”",
+                    subtitle: "\(viewModel.displayVideos.count) video"
+                )
+                .padding(.horizontal, MagicWallTheme.gutter)
+
+                if viewModel.displayVideos.isEmpty {
+                    MessageState(
+                        icon: "magnifyingglass",
+                        title: "Nessun risultato",
+                        message: "Prova con un altro titolo oppure importa nuovi video."
+                    )
+                } else {
+                    VideoGridView(
+                        videos: viewModel.displayVideos,
+                        membership: membership,
+                        onOpen: open,
+                        onNewCategory: beginCategoryCreation
+                    )
+                    .padding(.horizontal, MagicWallTheme.gutter)
+                }
+            }
+            .padding(.top, 26)
+            .padding(.bottom, 48)
+        }
+        .scrollIndicators(.hidden)
+    }
+
+    // MARK: - Overlays
+
+    @ViewBuilder
+    private var overlays: some View {
+        VStack(spacing: 10) {
+            if isDropTargeted {
+                banner(
+                    text: "Rilascia i video per importarli",
+                    icon: "arrow.down.circle.fill",
+                    tint: MagicWallTheme.accent,
+                    dismiss: nil
+                )
+            } else if let error = viewModel.lastError {
+                banner(
+                    text: error,
+                    icon: "exclamationmark.triangle.fill",
+                    tint: Color(red: 1, green: 0.35, blue: 0.35),
+                    dismiss: { viewModel.lastError = nil }
+                )
+            } else if let message = viewModel.statusMessage {
+                banner(text: message, icon: "checkmark.circle.fill", tint: MagicWallTheme.live, dismiss: nil)
+                    .task(id: message) {
+                        try? await Task.sleep(nanoseconds: 4_000_000_000)
+                        if viewModel.statusMessage == message {
+                            withAnimation(.easeOut(duration: 0.15)) { viewModel.statusMessage = nil }
+                        }
+                    }
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(.top, 66)
+        .animation(.easeOut(duration: 0.15), value: viewModel.statusMessage)
+        .animation(.easeOut(duration: 0.15), value: isDropTargeted)
+
+        dropHighlight
+
+        if let video = previewVideo {
+            VideoPreviewView(
+                video: video,
+                onNewCategory: beginCategoryCreation,
+                onClose: { previewVideo = nil }
+            )
+            .transition(.opacity)
+            .zIndex(2)
+        }
+    }
+
+    private var dropHighlight: some View {
+        RoundedRectangle(cornerRadius: 18, style: .continuous)
+            .strokeBorder(
+                MagicWallTheme.accent,
+                style: StrokeStyle(lineWidth: 3, dash: [10, 7])
+            )
+            .background(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(MagicWallTheme.accent.opacity(0.10))
+            )
+            .padding(10)
+            .opacity(isDropTargeted ? 1 : 0)
+            .allowsHitTesting(false)
+    }
+
+    private func banner(text: String, icon: String, tint: Color, dismiss: (() -> Void)?) -> some View {
+        HStack(spacing: 9) {
+            Image(systemName: icon)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(tint)
+
+            Text(text)
+                .font(.system(size: 12.5))
+                .foregroundStyle(.white.opacity(0.95))
+                .lineLimit(2)
+
+            if let dismiss {
+                Button {
+                    withAnimation(.easeOut(duration: 0.12)) { dismiss() }
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(.white.opacity(0.7))
+                }
+                .buttonStyle(.plain)
+                .help("Chiudi")
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 9)
+        .background(MagicWallTheme.surfaceHigh, in: Capsule())
+        .overlay(Capsule().strokeBorder(tint.opacity(0.35), lineWidth: 1))
+        .shadow(color: .black.opacity(0.35), radius: 10, y: 4)
+        .transition(.move(edge: .top).combined(with: .opacity))
+    }
+
+    // MARK: - Toolbar
+
+    @ToolbarContentBuilder
+    private var overflowToolbar: some ToolbarContent {
+        // Keeps an (invisible) NSToolbar on the window and groups secondary
+        // actions that would crowd the custom top bar.
+        ToolbarItem(placement: .automatic) {
+            Menu {
+                Toggle("Pausa wallpaper", isOn: $engine.isPaused)
+                Toggle("Pausa su batteria", isOn: $engine.pauseOnBattery)
+                Toggle("Pausa con desktop nascosto", isOn: $engine.pauseWhenOccluded)
+                Divider()
+                Button("Importa video…") { viewModel.presentImportPanel() }
+                Button("Wallpaper casuale") { viewModel.applyRandomToAllScreens() }
+                Button("Nuova categoria…") { beginCategoryCreation() }
+                Button("Ricostruisci libreria") { viewModel.refresh() }
+                if engine.hasActiveWallpaper {
+                    Divider()
+                    Button("Ferma tutti i wallpaper") { engine.clearAll() }
+                }
+                Divider()
+                ForEach(engine.statuses) { status in
+                    Text(status.videoTitle.map { "\(status.name): \($0)" } ?? "\(status.name): nessun wallpaper")
+                }
+            } label: {
+                Image(systemName: "ellipsis.circle")
+            }
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
+            .fixedSize()
+            .help("Altre azioni")
+        }
+    }
+
+    // MARK: - Actions
+
+    private func open(_ video: Video) {
+        withAnimation(.easeOut(duration: 0.15)) { previewVideo = video }
+    }
+
+    private func beginCategoryCreation() {
+        newCategoryName = ""
+        isNamingCategory = true
+    }
+
+    private func createCategory() {
+        let name = newCategoryName
+        newCategoryName = ""
+        guard !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        viewModel.createCategory(named: name)
+        rebuildMembership()
+    }
+
+    /// One pass over the library keeps category lookups O(1) everywhere else.
+    private func rebuildMembership() {
+        var map: [String: Set<Int64>] = [:]
+        for video in viewModel.videos {
+            let ids = Set(viewModel.categories(for: video).compactMap(\.id))
+            if !ids.isEmpty {
+                map[video.id] = ids
+            }
+        }
+        membership = map
     }
 
     // MARK: - Drag & drop
@@ -239,12 +298,17 @@ struct ContentView: View {
     private func handleDrop(_ providers: [NSItemProvider]) async {
         var urls: [URL] = []
         for provider in providers {
-            let item = try? await provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier, options: nil)
-            guard let data = item as? Data,
-                  let string = String(data: data, encoding: .utf8),
-                  let url = URL(string: string) else { continue }
-            urls.append(url)
+            if let url = try? await provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier, options: nil) as? URL {
+                urls.append(url)
+                continue
+            }
+            if let data = try? await provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier, options: nil) as? Data,
+               let string = String(data: data, encoding: .utf8),
+               let url = URL(string: string) {
+                urls.append(url)
+            }
         }
+        guard !urls.isEmpty else { return }
         await viewModel.importVideos(urls)
     }
 }

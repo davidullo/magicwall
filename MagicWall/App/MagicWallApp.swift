@@ -11,6 +11,7 @@ struct MagicWallApp: App {
         let environment = AppEnvironment.bootstrap()
         _viewModel = StateObject(wrappedValue: environment.viewModel)
         _engine = StateObject(wrappedValue: environment.engine)
+        AppDelegate.engine = environment.engine
     }
 
     var body: some Scene {
@@ -46,7 +47,14 @@ struct MagicWallApp: App {
 }
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    /// Set at launch so termination can shut the engine down cleanly.
+    static weak var engine: WallpaperEngine?
+
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         false
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        AppDelegate.engine?.prepareForTermination()
     }
 }
