@@ -1,0 +1,645 @@
+/*  MagicWall — components: buttons, bricks, browser window, dock, faq, motion  */
+
+/* ═════════════════════════════ buttons ═════════════════════════════ */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 10px 18px;
+  border-radius: var(--radius-full);
+  font-size: 0.92rem;
+  font-weight: 550;
+  letter-spacing: -0.012em;
+  white-space: nowrap;
+  transition: transform 0.18s var(--ease), box-shadow 0.32s var(--ease),
+    background-image 0.25s var(--ease), border-color 0.22s var(--ease),
+    color 0.2s var(--ease);
+}
+
+.btn--sm {
+  padding: 8px 14px;
+  font-size: 0.86rem;
+}
+
+.btn--lg {
+  padding: 13px 24px;
+  font-size: 0.97rem;
+}
+
+.btn .ico {
+  flex: 0 0 auto;
+}
+
+.btn--primary {
+  background-image: var(--grad-accent);
+  color: var(--white);
+  box-shadow: var(--shadow-pink), inset 0 1px 0 rgba(255, 255, 255, 0.42);
+}
+
+.btn--primary:hover {
+  background-image: var(--grad-accent-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 18px 32px -14px rgba(226, 79, 159, 0.58),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.btn--primary:active {
+  transform: translateY(0) scale(0.985);
+}
+
+.btn--ghost {
+  background: rgba(255, 255, 255, 0.85);
+  color: var(--ink);
+  border: 1px solid var(--line-2);
+  box-shadow: var(--shadow-xs);
+}
+
+.btn--ghost:hover {
+  border-color: var(--pink-300);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ══════════════════════════════ dots ══════════════════════════════ */
+
+.dot {
+  flex: 0 0 auto;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--pink-500);
+  box-shadow: 0 0 0 3px rgba(247, 107, 184, 0.16);
+}
+
+.eyebrow .dot {
+  display: inline-block;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+/* ══════════════════════════════ blobs ══════════════════════════════ */
+
+.blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(70px);
+}
+
+.blob--a {
+  top: -240px;
+  left: 50%;
+  translate: -50% 0;
+  width: min(1040px, 118vw);
+  height: 620px;
+  background: radial-gradient(
+    50% 50% at 50% 50%,
+    rgba(255, 150, 208, 0.34),
+    rgba(255, 150, 208, 0) 72%
+  );
+}
+
+.blob--b {
+  top: 4%;
+  left: -14%;
+  width: 520px;
+  height: 520px;
+  background: radial-gradient(
+    50% 50% at 50% 50%,
+    rgba(255, 205, 233, 0.55),
+    rgba(255, 205, 233, 0) 70%
+  );
+}
+
+.blob--c {
+  top: 16%;
+  right: -16%;
+  width: 560px;
+  height: 560px;
+  background: radial-gradient(
+    50% 50% at 50% 50%,
+    rgba(255, 219, 238, 0.5),
+    rgba(255, 219, 238, 0) 72%
+  );
+}
+
+.blob--veil {
+  top: -6%;
+  left: 50%;
+  translate: -50% 0;
+  width: min(1120px, 122vw);
+  height: 700px;
+  background: radial-gradient(
+    50% 50% at 50% 50%,
+    rgba(255, 255, 255, 0.94),
+    rgba(255, 255, 255, 0.62) 45%,
+    rgba(255, 255, 255, 0) 74%
+  );
+}
+
+.grain {
+  position: absolute;
+  inset: 0;
+  opacity: 0.04;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 140px 140px;
+}
+
+/* ═══════════════════════════ bricks ═══════════════════════════ */
+
+.hero-bricks,
+.cta-bricks {
+  position: absolute;
+  background-repeat: repeat;
+  /* bond: 100×50 bricks on a 106×56 grid */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='212' height='112'%3E%3Cg fill='%23ffd3e9'%3E%3Crect x='2' y='2' width='100' height='50' rx='11'/%3E%3Crect x='110' y='2' width='100' height='50' rx='11'/%3E%3Crect x='-51' y='58' width='100' height='50' rx='11'/%3E%3Crect x='57' y='58' width='100' height='50' rx='11'/%3E%3Crect x='165' y='58' width='100' height='50' rx='11'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 212px 112px;
+}
+
+/* static pattern only when the field was not generated (no JS / reduced motion) */
+.hero-bricks:not(:empty) {
+  background-image: none;
+}
+
+.hero-bricks {
+  --brick-w: 108px;
+  --brick-h: 54px;
+  inset: 0 0 auto 0;
+  height: clamp(420px, 58vh, 680px);
+  opacity: 0.5;
+  mask-image: radial-gradient(
+    112% 84% at 50% -14%,
+    #000 0%,
+    rgba(0, 0, 0, 0.42) 40%,
+    rgba(0, 0, 0, 0) 74%
+  );
+  -webkit-mask-image: radial-gradient(
+    112% 84% at 50% -14%,
+    #000 0%,
+    rgba(0, 0, 0, 0.42) 40%,
+    rgba(0, 0, 0, 0) 74%
+  );
+}
+
+/* pink wash behind the bricks */
+.hero-bricks::before {
+  content: "";
+  position: absolute;
+  inset: -10% 0 auto 0;
+  height: 78%;
+  background: radial-gradient(
+    72% 100% at 50% 0%,
+    var(--pink-200) 0%,
+    rgba(255, 216, 236, 0) 72%
+  );
+  opacity: 0.5;
+}
+
+/* cursor light */
+.hero-bricks::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    260px circle at var(--mx, 50%) var(--my, 50%),
+    rgba(255, 255, 255, 0.72),
+    rgba(255, 255, 255, 0) 68%
+  );
+}
+
+.brick {
+  position: absolute;
+  width: calc(var(--brick-w) - 8px);
+  height: calc(var(--brick-h) - 8px);
+  border-radius: 11px;
+  background-image: linear-gradient(
+    180deg,
+    var(--brick-hi) 0%,
+    #ffe2f2 58%,
+    var(--brick-mid) 100%
+  );
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -2px 3px rgba(214, 120, 170, 0.18),
+    0 1px 2px rgba(185, 60, 127, 0.05);
+  opacity: 0;
+  transform: translateY(12px) scale(0.94) rotate(var(--r, 0deg));
+}
+
+.hero-bricks.is-ready .brick {
+  animation: brick-in 0.62s var(--ease-out) forwards;
+  animation-delay: var(--d, 0ms);
+}
+
+@keyframes brick-in {
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotate(var(--r, 0deg));
+  }
+}
+
+.cta-bricks {
+  inset: auto 0 0 0;
+  height: clamp(150px, 21vw, 260px);
+  opacity: 0.5;
+  mask-image: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(0, 0, 0, 0.55) 46%,
+    #000 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(0, 0, 0, 0.55) 46%,
+    #000 100%
+  );
+}
+
+/* ═════════════════════ the browser window ═════════════════════ */
+
+.browser {
+  position: relative;
+  z-index: 2;
+  grid-area: 1 / 1;
+  width: min(1040px, 80%);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--white);
+  box-shadow: 0 40px 70px -34px rgba(23, 19, 25, 0.55),
+    0 3px 10px -5px rgba(23, 19, 25, 0.3);
+}
+
+/* the window keeps proportionally more of the stage as the viewport narrows
+   (see --screen-ratio in layout.css, which guarantees it never gets clipped) */
+@media (max-width: 1279px) {
+  .browser {
+    width: min(1040px, 76%);
+  }
+}
+
+@media (max-width: 900px) {
+  .browser {
+    width: min(1040px, 74%);
+  }
+}
+
+@media (max-width: 720px) {
+  .browser {
+    /* a strip of wallpaper stays visible on both sides */
+    width: 94%;
+  }
+}
+
+.browser-chrome {
+  display: flex;
+  align-items: center;
+  gap: clamp(7px, 0.9vw, 13px);
+  height: clamp(32px, 3vw, 42px);
+  padding-inline: clamp(10px, 1.2vw, 16px);
+  background: linear-gradient(180deg, #f8f7f9 0%, #ebe9ee 100%);
+  border-bottom: 1px solid rgba(23, 19, 25, 0.08);
+  color: #7c7883;
+}
+
+.browser-lights {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 6px;
+}
+
+.browser-lights i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.browser-lights i:nth-child(1) {
+  background: #ff5f57;
+}
+
+.browser-lights i:nth-child(2) {
+  background: #febc2e;
+}
+
+.browser-lights i:nth-child(3) {
+  background: #28c840;
+}
+
+.browser-nav {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 7px;
+  color: #8f8b95;
+}
+
+/* the glyphs must not be squeezed to nothing in a very narrow window */
+.browser-nav svg {
+  flex: 0 0 auto;
+}
+
+.browser-url {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex: 1;
+  max-width: clamp(220px, 40%, 420px);
+  margin-inline: auto;
+  padding: 5px 12px;
+  border-radius: 8px;
+  background: var(--white);
+  border: 1px solid rgba(23, 19, 25, 0.07);
+  box-shadow: inset 0 1px 2px rgba(23, 19, 25, 0.05);
+  font-size: clamp(0.62rem, 0.82vw, 0.78rem);
+  color: #55525a;
+  white-space: nowrap;
+}
+
+/* ═══════════════ the page shown inside the window ═══════════════ */
+
+.site-mini {
+  container-type: inline-size;
+  display: grid;
+  justify-items: center;
+  gap: clamp(5px, 1cqw, 12px);
+  padding: clamp(16px, 2.8cqw, 34px) clamp(16px, 3cqw, 38px)
+    clamp(18px, 3.2cqw, 42px);
+  text-align: center;
+}
+
+.mini-title {
+  max-width: 22ch;
+  font-size: clamp(1.15rem, 4.4cqw, 3.05rem);
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+  font-weight: 620;
+}
+
+.mini-title .grad {
+  /* inline-block keeps the highlight from breaking mid-phrase: the h1
+     max-width pushes it onto its own line without stretching the gradient */
+  display: inline-block;
+}
+
+.mini-lede {
+  max-width: 46ch;
+  font-size: clamp(0.75rem, 1.75cqw, 1.15rem);
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+
+.mini-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: clamp(6px, 1.1cqw, 10px);
+  margin-top: clamp(6px, 1.4cqw, 14px);
+}
+
+/* the buttons scale with the window, so they stay proportionate */
+.mini-actions .btn {
+  gap: clamp(6px, 0.9cqw, 10px);
+  padding: clamp(7px, 0.85cqw, 11px) clamp(13px, 1.5cqw, 20px);
+  font-size: clamp(0.66rem, 1.35cqw, 0.96rem);
+}
+
+.mini-actions .btn .ico {
+  width: 1.05em;
+  height: 1.05em;
+}
+
+.mini-note {
+  font-size: clamp(0.6rem, 1.15cqw, 0.86rem);
+  color: var(--ink-3);
+}
+
+.mini-facts {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: clamp(12px, 2.6cqw, 34px);
+  margin-top: clamp(8px, 1.8cqw, 20px);
+  padding-top: clamp(10px, 2cqw, 22px);
+  border-top: 1px solid var(--line);
+  width: 100%;
+}
+
+.mini-facts b {
+  display: block;
+  font-size: clamp(0.65rem, 1.35cqw, 1rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.mini-facts span {
+  display: block;
+  font-size: clamp(0.58rem, 1.1cqw, 0.8rem);
+  color: var(--ink-3);
+}
+
+/* in a narrow window four facts in a row would leave one orphaned: 2×2 */
+@container (max-width: 430px) {
+  .mini-facts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(10px, 2.6cqw, 20px);
+  }
+}
+
+/* ════════════════════════════ the dock ════════════════════════════ */
+/* Structure ported from jollycat: `.dock-bg` sits behind the row, every icon
+   rests at the same size and only the icons near the pointer magnify — the
+   magnification is a CSS `zoom` on `.dock-icon-zoom`, driven by initDock()
+   in scripts/main.js. Sizes come from --dock-icon / --dock-pad, set on
+   `.screen` in layout.css so the glass padding can follow them. */
+
+.dock {
+  position: absolute;
+  z-index: 3;
+  bottom: clamp(8px, 1.1vw, 14px);
+  left: 50%;
+  translate: -50% 0;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  padding: var(--dock-pad, 10px);
+  gap: calc(var(--dock-icon, 64px) * 0.12);
+}
+
+.dock-bg {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: calc(var(--dock-icon, 64px) + var(--dock-pad, 10px) * 2);
+  border-radius: 22px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.52) 0%,
+    rgba(255, 255, 255, 0.3) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(24px) saturate(1.8);
+  -webkit-backdrop-filter: blur(24px) saturate(1.8);
+  box-shadow: 0 18px 40px -18px rgba(23, 19, 25, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.dock-item {
+  position: relative;
+  z-index: 1;
+}
+
+.dock-icon-zoom {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--dock-icon, 64px);
+  height: var(--dock-icon, 64px);
+  zoom: 1;
+  transform-origin: center bottom;
+  will-change: zoom;
+}
+
+.dock-icon {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
+  filter: drop-shadow(0 5px 10px rgba(23, 19, 25, 0.22));
+}
+
+/* The Tahoe icons ship with ~8.6% of transparent margin baked in; the app icon
+   is full-bleed, so it gets the same padding to match their on-screen tile size
+   (padding, not a transform, so the tile scales cleanly with the dock zoom). */
+.dock-item--main .dock-icon {
+  padding: 8.6%;
+}
+
+.dock-dot {
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(96, 88, 102, 0.7);
+}
+
+/* ══════════════════════════════ faq ══════════════════════════════ */
+
+.faq details {
+  border-bottom: 1px solid var(--line);
+}
+
+.faq summary {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: clamp(17px, 2vw, 22px) 4px;
+  cursor: pointer;
+  font-size: clamp(1rem, 1.4vw, 1.1rem);
+  font-weight: 520;
+  letter-spacing: -0.015em;
+  list-style: none;
+  transition: color 0.2s var(--ease);
+}
+
+.faq summary::-webkit-details-marker {
+  display: none;
+}
+
+.faq summary:hover {
+  color: var(--pink-700);
+}
+
+.faq summary::after {
+  content: "";
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  margin-top: 3px;
+  background: center / contain no-repeat
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' fill='none' stroke='%23e24f9f' stroke-width='1.6' stroke-linecap='round'%3E%3Cpath d='M9 3.4v11.2M3.4 9h11.2'/%3E%3C/svg%3E");
+  transition: transform 0.3s var(--ease-out);
+}
+
+.faq details[open] summary::after {
+  transform: rotate(135deg);
+}
+
+.faq details > p {
+  max-width: 70ch;
+  padding: 0 52px clamp(20px, 2.4vw, 26px) 4px;
+  font-size: 0.96rem;
+  line-height: 1.62;
+  color: var(--ink-2);
+}
+
+.faq code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: var(--pink-50);
+  border: 1px solid var(--line);
+  color: var(--pink-700);
+}
+
+/* ══════════════════════════ reveal motion ══════════════════════════ */
+
+html.js [data-reveal] {
+  opacity: 0;
+  translate: 0 16px;
+}
+
+html.js [data-reveal].is-in {
+  opacity: 1;
+  translate: 0 0;
+  transition: opacity 0.7s var(--ease-out), translate 0.8s var(--ease-out);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.js [data-reveal] {
+    opacity: 1;
+    translate: 0 0;
+  }
+
+  .hero-bricks.is-ready .brick {
+    opacity: 1;
+    transform: rotate(var(--r, 0deg));
+    animation: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .browser-url {
+    max-width: none;
+  }
+}
+
+/* very narrow phones: the chrome stops crowding the URL pill */
+@media (max-width: 380px) {
+  .browser-chrome {
+    padding-inline: 10px;
+    gap: 7px;
+  }
+
+  .browser-nav--right {
+    display: none;
+  }
+}
+
+/* at the smallest widths even the back/forward pair has to go, otherwise the
+   URL pill would be clipped by the window edge */
+@media (max-width: 360px) {
+  .browser-nav {
+    display: none;
+  }
+}

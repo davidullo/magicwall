@@ -1,0 +1,14 @@
+{
+  "name": "MagicWall",
+  "short_name": "MagicWall",
+  "description": "Local video wallpapers for macOS. One video per display, offline, open source.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fdfbfc",
+  "theme_color": "#fdfbfc",
+  "icons": [
+    { "src": "/assets/icon/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/assets/icon/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/assets/icon/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

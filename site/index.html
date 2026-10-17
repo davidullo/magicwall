@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>MagicWall — Local video wallpapers for macOS</title>
+<meta name="description" content="Set a different video wallpaper on every display. Native, offline, no accounts, no telemetry. Requires macOS 15 or later; universal for Apple silicon and Intel.">
+<link rel="canonical" href="https://magicwall.davide.fyi/">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#fdfbfc">
+<meta name="author" content="Davide Barbieri">
+
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://magicwall.davide.fyi/">
+<meta property="og:site_name" content="MagicWall">
+<meta property="og:title" content="MagicWall — a different video wallpaper on every display">
+<meta property="og:description" content="Native macOS video wallpapers from your own library. Per-screen assignments, power-aware playback, menu bar control. Offline, MIT licensed, macOS 15+.">
+<meta property="og:image" content="https://magicwall.davide.fyi/assets/icon/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="MagicWall — a different video wallpaper on every display">
+<meta name="twitter:description" content="Native macOS video wallpapers from your own library. Per-display assignments, power-aware playback, menu bar control. Offline, MIT licensed, macOS 15+.">
+<meta name="twitter:image" content="https://magicwall.davide.fyi/assets/icon/og.jpg">
+
+<link rel="icon" href="assets/icon/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="assets/icon/favicon-16.png" sizes="16x16" type="image/png">
+<link rel="apple-touch-icon" href="assets/icon/apple-touch-icon.png">
+<link rel="manifest" href="site.webmanifest">
+
+<link rel="preload" href="assets/font/inter-latin-var.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/font/geist-mono-latin-var.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="styles/tokens.css">
+<link rel="stylesheet" href="styles/layout.css">
+<link rel="stylesheet" href="styles/components.css">
+<!-- marks JS as available before first paint so reveal animations never flash -->
+<script>document.documentElement.classList.add('js');</script>
+<script src="scripts/main.js" defer></script>
+</head>
+
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="nav" data-nav>
+  <div class="wrap wrap--screen nav-inner">
+    <a class="brand" href="#top" aria-label="MagicWall — home">
+      <img class="brand-icon" src="assets/icon/icon-192.png" width="30" height="30" alt="" decoding="async">
+      <span class="brand-name">MagicWall</span>
+    </a>
+
+    <nav class="nav-links" aria-label="Main">
+      <a href="#faq">FAQ</a>
+      <a href="https://github.com/davidullo/magicwall">GitHub</a>
+    </nav>
+
+    <div class="nav-actions">
+      <a class="btn btn--primary btn--sm" href="https://github.com/davidullo/magicwall/releases/latest" data-release-link>
+        <svg class="ico" viewBox="0 0 20 20" width="16" height="16" aria-hidden="true" focusable="false"><path d="M10 2.6v9.1m0 0 3.4-3.4M10 11.7 6.6 8.3M3.6 15.4h12.8" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Download
+      </a>
+      <button class="nav-toggle" type="button" data-nav-toggle aria-expanded="false" aria-controls="nav-panel">
+        <span class="sr-only">Menu</span>
+        <span class="nav-toggle-bars" aria-hidden="true"><i></i><i></i></span>
+      </button>
+    </div>
+  </div>
+
+  <div class="nav-panel" id="nav-panel" data-nav-panel>
+    <a href="#faq">FAQ</a>
+    <a href="https://github.com/davidullo/magicwall">GitHub</a>
+    <a href="https://github.com/davidullo/magicwall/releases/latest" data-release-link>Download for macOS</a>
+  </div>
+</header>
+
+<main id="main">
+
+  <!-- ───────────────────────────── hero ───────────────────────────── -->
+  <section class="hero" id="top">
+    <div class="hero-bg" aria-hidden="true">
+      <div class="hero-bricks" data-bricks></div>
+      <span class="blob blob--a"></span>
+      <span class="blob blob--b"></span>
+      <span class="blob blob--c"></span>
+      <span class="blob blob--veil"></span>
+      <span class="grain"></span>
+    </div>
+
+    <div class="wrap wrap--screen hero-inner">
+      <div class="screen" data-reveal>
+        <div class="screen-glass">
+          <video class="screen-wallpaper" autoplay muted loop playsinline preload="metadata"
+                 poster="assets/media/wallpaper-poster.jpg" aria-hidden="true" tabindex="-1">
+            <source src="assets/media/wallpaper.mp4" type="video/mp4">
+          </video>
+
+          <div class="browser">
+            <div class="browser-chrome">
+              <span class="browser-lights" aria-hidden="true"><i></i><i></i><i></i></span>
+              <span class="browser-nav" aria-hidden="true">
+                <svg viewBox="0 0 16 16" width="14" height="14" focusable="false"><path d="M10 3.6 5.8 8l4.2 4.4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <svg viewBox="0 0 16 16" width="14" height="14" focusable="false"><path d="M6 3.6 10.2 8 6 12.4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </span>
+              <span class="browser-url">
+                <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false"><path d="M5 7V5.6a3 3 0 0 1 6 0V7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><rect x="3.4" y="7" width="9.2" height="6.2" rx="1.8" fill="currentColor" opacity=".85"/></svg>
+                magicwall.davide.fyi
+              </span>
+              <span class="browser-nav browser-nav--right" aria-hidden="true">
+                <svg viewBox="0 0 16 16" width="14" height="14" focusable="false"><path d="M13 8a5 5 0 1 1-1.6-3.7M13 2.4V5h-2.6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <svg viewBox="0 0 16 16" width="14" height="14" focusable="false"><path d="M8 10.5V2.6m0 0L5.3 5.3M8 2.6l2.7 2.7M3.4 10.4v1.8c0 .9.7 1.6 1.6 1.6h6c.9 0 1.6-.7 1.6-1.6v-1.8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </span>
+            </div>
+
+            <div class="browser-body">
+              <div class="site-mini">
+                <h1 class="mini-title">A different video wallpaper <span class="grad">on every display</span></h1>
+
+                <p class="mini-lede">
+                  MagicWall plays videos from your own library as desktop wallpapers on
+                  macOS — one per screen, behind your icons. No accounts, no telemetry,
+                  and no network traffic.
+                </p>
+
+                <div class="mini-actions">
+                  <a class="btn btn--primary btn--sm" href="https://github.com/davidullo/magicwall/releases/latest" data-release-link>
+                    <svg class="ico" viewBox="0 0 20 20" width="15" height="15" aria-hidden="true" focusable="false"><path d="M10 2.6v9.1m0 0 3.4-3.4M10 11.7 6.6 8.3M3.6 15.4h12.8" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    Download for macOS
+                  </a>
+                  <a class="btn btn--ghost btn--sm" href="https://github.com/davidullo/magicwall">
+                    <svg class="ico" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+                    View on GitHub
+                  </a>
+                </div>
+
+                <p class="mini-note mono" data-release-status aria-live="polite">v0.1.0 · 7.7 MB · macOS 15+</p>
+
+                <ul class="mini-facts">
+                  <li><b>~8 MB</b><span>signed DMG</span></li>
+                  <li><b>macOS 15+</b><span>silicon &amp; Intel</span></li>
+                  <li><b>100% offline</b><span>no telemetry</span></li>
+                  <li><b>MIT licensed</b><span>open source</span></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="dock" data-dock aria-hidden="true">
+            <span class="dock-bg" aria-hidden="true"></span>
+
+            <span class="dock-item">
+              <span class="dock-icon-zoom"><img class="dock-icon" src="assets/dock/finder_tahoe.png" alt="" width="80" height="80" loading="lazy" decoding="async"></span>
+            </span>
+            <span class="dock-item">
+              <span class="dock-icon-zoom"><img class="dock-icon" src="assets/dock/clock_tahoe.png" alt="" width="80" height="80" loading="lazy" decoding="async"></span>
+            </span>
+
+            <span class="dock-item dock-item--main">
+              <span class="dock-icon-zoom"><img class="dock-icon" src="assets/icon/icon-192.png" alt="" width="80" height="80" decoding="async"></span>
+              <span class="dock-dot" aria-hidden="true"></span>
+            </span>
+
+            <span class="dock-item">
+              <span class="dock-icon-zoom"><img class="dock-icon" src="assets/dock/maps_tahoe.png" alt="" width="80" height="80" loading="lazy" decoding="async"></span>
+            </span>
+            <span class="dock-item">
+              <span class="dock-icon-zoom"><img class="dock-icon" src="assets/dock/photos_tahoe.png" alt="" width="80" height="80" loading="lazy" decoding="async"></span>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ──────────────────────────── faq ──────────────────────────── -->
+  <section class="section" id="faq">
+    <div class="wrap wrap--narrow">
+      <div class="section-head section-head--center" data-reveal>
+        <p class="eyebrow"><span class="dot"></span>FAQ</p>
+        <h2 class="h2">Questions, answered</h2>
+      </div>
+
+      <div class="faq">
+        <details name="faq" data-reveal>
+          <summary>Does MagicWall have to stay open?</summary>
+          <p>Yes. It runs from the menu bar: closing the library window does not quit it, so the wallpaper keeps running. If you quit MagicWall from the menu bar, playback stops and your desktop falls back to the still picture it had before.</p>
+        </details>
+        <details name="faq" data-reveal>
+          <summary>Does anything leave my Mac?</summary>
+          <p>No. MagicWall has no accounts, no telemetry and makes no network requests at all. Videos, posters and the SQLite database stay inside <code>~/Library/Application Support/MagicWall</code> on your machine.</p>
+        </details>
+        <details name="faq" data-reveal>
+          <summary>Is it open source?</summary>
+          <p>Yes — MIT licensed, written in SwiftUI with AVFoundation and GRDB, and the source is on GitHub. Official downloads are signed with a Developer ID, and the app inside is notarized by Apple with the ticket stapled, so it launches without a Gatekeeper prompt.</p>
+        </details>
+        <details name="faq" data-reveal>
+          <summary>Can I use a different video on each display?</summary>
+          <p>Yes. Assignments are stored per display, keyed by the screen’s display ID, and restored every time MagicWall starts — a monitor that stays connected resumes the same clip it had before.</p>
+        </details>
+        <details name="faq" data-reveal>
+          <summary>Does it drain the battery?</summary>
+          <p>Playback pauses on battery, in Low Power Mode, under thermal pressure, when the screen is locked or the desktop is hidden, and resumes automatically after sleep and wake.</p>
+        </details>
+        <details name="faq" data-reveal>
+          <summary>Which video formats work?</summary>
+          <p>MP4, MOV and M4V files import and play through AVFoundation, so H.264 clips work out of the box — and HEVC plays on the Macs that support it. Optional transcoding that shrinks large files is still on the roadmap.</p>
+        </details>
+        <details name="faq" data-reveal>
+          <summary>Where does it store my files?</summary>
+          <p>Everything sits in <code>~/Library/Application Support/MagicWall</code>: <code>magicwall.sqlite</code>, <code>themes.json</code> and the <code>Library/Videos</code> and <code>Library/Posters</code> folders. Delete it and remove the app to uninstall.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────── final cta ─────────────────────────── -->
+  <section class="cta">
+    <div class="cta-bricks" aria-hidden="true"></div>
+    <div class="wrap wrap--narrow cta-inner" data-reveal>
+      <h2 class="h2">Your videos, on every screen</h2>
+      <p class="lede">A signed DMG of about 8 MB for macOS 15 or later, universal for Apple silicon and Intel.</p>
+      <div class="cta-actions">
+        <a class="btn btn--primary btn--lg" href="https://github.com/davidullo/magicwall/releases/latest" data-release-link>
+          <svg class="ico" viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" focusable="false"><path d="M10 2.6v9.1m0 0 3.4-3.4M10 11.7 6.6 8.3M3.6 15.4h12.8" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Download the DMG
+        </a>
+        <a class="btn btn--ghost btn--lg" href="https://github.com/davidullo/magicwall">Read the README</a>
+      </div>
+      <p class="cta-meta mono">Developer ID signed · app notarized by Apple · <span data-release-name>MagicWall-0.1.0.dmg</span></p>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="wrap footer-inner">
+    <div class="footer-brand">
+      <img class="footer-icon" src="assets/icon/icon-192.png" width="44" height="44" alt="" loading="lazy" decoding="async">
+      <p class="footer-word">MagicWall</p>
+      <p class="small">Local video wallpapers for macOS. Native, lightweight and completely offline.</p>
+    </div>
+
+    <nav class="footer-cols" aria-label="Footer">
+      <div class="footer-col">
+        <p class="footer-col-title mono">Product</p>
+        <a href="https://github.com/davidullo/magicwall/releases/latest" data-release-link>Download for macOS</a>
+        <a href="https://github.com/davidullo/magicwall">Source code</a>
+        <a href="#faq">FAQ</a>
+      </div>
+      <div class="footer-col">
+        <p class="footer-col-title mono">Resources</p>
+        <a href="https://github.com/davidullo/magicwall">README</a>
+        <a href="https://github.com/davidullo/magicwall#%EF%B8%8F-build--run">Build from source</a>
+        <a href="https://github.com/davidullo/magicwall/releases">All releases</a>
+      </div>
+      <div class="footer-col">
+        <p class="footer-col-title mono">Legal</p>
+        <a href="https://github.com/davidullo/magicwall/blob/main/LICENSE">MIT license</a>
+        <a href="https://github.com/davidullo/magicwall/blob/main/THIRD_PARTY_NOTICES.md">Third-party notices</a>
+      </div>
+      <div class="footer-col">
+        <p class="footer-col-title mono">Community</p>
+        <a href="https://github.com/davidullo/magicwall/issues/new">Report a bug</a>
+        <a href="https://github.com/davidullo/magicwall/issues">Issues</a>
+      </div>
+    </nav>
+  </div>
+
+  <div class="wrap footer-base">
+    <p class="small">© <span data-year>2026</span> Davide Barbieri · MIT licensed · Built with SwiftUI on macOS</p>
+    <p class="small">Inter and Geist Mono, SIL Open Font License. Not affiliated with Apple.</p>
+  </div>
+</footer>
+</body>
+</html>

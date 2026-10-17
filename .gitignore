@@ -15,5 +15,8 @@ xcuserdata/
 # Local agent configuration
 .opencode/
 
+# Vercel project link (site/)
+site/.vercel/
+
 # Dev fixtures (generated test media)
 DevFixtures/

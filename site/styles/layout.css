@@ -1,0 +1,446 @@
+/*  MagicWall — layout: nav, hero (Mac screen), sections, faq, cta, footer  */
+
+.wrap--wide {
+  max-width: 1240px;
+}
+
+/* the hero screen may run wider than the text columns */
+.wrap--screen {
+  max-width: 1500px;
+}
+
+/* ═══════════════════════════════ nav ═══════════════════════════════ */
+
+.nav {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 60;
+  background: transparent;
+  border-bottom: 1px solid transparent;
+  transition: background 0.3s var(--ease), box-shadow 0.3s var(--ease),
+    border-color 0.3s var(--ease);
+}
+
+.nav.is-scrolled,
+.nav.is-open {
+  background: rgba(253, 251, 252, 0.82);
+  backdrop-filter: blur(16px) saturate(1.5);
+  -webkit-backdrop-filter: blur(16px) saturate(1.5);
+  border-bottom-color: var(--line);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.nav-inner {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  height: var(--nav-h);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-right: auto;
+}
+
+.brand-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px -2px rgba(185, 60, 127, 0.45);
+}
+
+.brand-name {
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.nav-links a {
+  padding: 7px 13px;
+  border-radius: var(--radius-full);
+  font-size: 0.9rem;
+  font-weight: 480;
+  color: var(--ink-2);
+  transition: color 0.2s var(--ease), background 0.2s var(--ease);
+}
+
+.nav-links a:hover {
+  color: var(--ink);
+  background: var(--pink-50);
+}
+
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.nav-toggle {
+  display: none;
+  width: 38px;
+  height: 34px;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line-2);
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.nav-toggle-bars {
+  display: grid;
+  gap: 5px;
+  width: 16px;
+}
+
+.nav-toggle-bars i {
+  display: block;
+  height: 1.6px;
+  border-radius: 2px;
+  background: var(--ink-2);
+  transition: transform 0.28s var(--ease);
+}
+
+.nav.is-open .nav-toggle-bars i:first-child {
+  transform: translateY(3.3px) rotate(45deg);
+}
+
+.nav.is-open .nav-toggle-bars i:last-child {
+  transform: translateY(-3.3px) rotate(-45deg);
+}
+
+.nav-panel {
+  display: none;
+}
+
+/* ═════════════════════════ hero / mac screen ═════════════════════════ */
+
+.hero {
+  position: relative;
+  padding-top: calc(var(--nav-h) + clamp(18px, 2.4vw, 40px));
+  padding-bottom: clamp(56px, 7vw, 104px);
+  overflow: clip;
+}
+
+.hero-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.hero-inner {
+  position: relative;
+  z-index: 2;
+}
+
+/* the display itself */
+.screen {
+  /* Dock metrics live here so the glass padding can reserve room for the
+     magnified row — .dock in components.css reads them with fallbacks.
+     The dock scales with the viewport: on a narrow "display" the icons are
+     proportionally smaller, exactly like a real Mac at a smaller resolution. */
+  --dock-icon: clamp(38px, 4.55vw, 64px);
+  --dock-pad: calc(var(--dock-icon) * 0.16);
+  position: relative;
+  padding: clamp(7px, 0.8vw, 12px);
+  border-radius: clamp(20px, 2vw, 30px);
+  background: linear-gradient(180deg, #fcfbfd 0%, #efecef 100%);
+  border: 1px solid var(--line-2);
+  box-shadow: 0 2px 4px rgba(23, 19, 25, 0.04),
+    0 70px 100px -56px rgba(185, 60, 127, 0.5),
+    0 30px 60px -44px rgba(23, 19, 25, 0.4);
+}
+
+.screen-glass {
+  position: relative;
+  display: grid;
+  place-items: center;
+  /* The stage keeps --screen-ratio as a *minimum*: the ::before below is a
+     ratio spacer sharing the same grid cell as .browser, so when the window
+     needs more room the glass grows instead of clipping it. */
+  --screen-ratio: 1.8;
+  --glass-pad-x: clamp(16px, 2.4vw, 48px);
+  --glass-pad-t: clamp(16px, 2.2vw, 40px);
+  --glass-pad-b: calc(var(--dock-icon) * 1.82 + 30px);
+  padding: var(--glass-pad-t) var(--glass-pad-x) var(--glass-pad-b);
+  border-radius: clamp(12px, 1.4vw, 20px);
+  overflow: hidden;
+  background: #2a2130;
+}
+
+/* The spacer is the *content* area the ratio asks for: the ratio is measured on
+   the border box, so the horizontal padding is added back and the vertical
+   padding (already part of the box) is taken away. */
+.screen-glass::before {
+  content: "";
+  grid-area: 1 / 1;
+  width: 100%;
+  padding-top: calc(
+    (100% + var(--glass-pad-x) * 2) / var(--screen-ratio) - var(--glass-pad-t) -
+      var(--glass-pad-b)
+  );
+}
+
+.screen-wallpaper {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ═══════════════════════════ section head ═══════════════════════════ */
+
+.section {
+  position: relative;
+  padding-block: clamp(64px, 8vw, 118px);
+}
+
+.section-head {
+  max-width: 700px;
+  margin-bottom: clamp(30px, 4vw, 54px);
+}
+
+.section-head--center {
+  margin-inline: auto;
+  text-align: center;
+}
+
+.section-head .h2 {
+  margin-bottom: 14px;
+}
+
+/* ═══════════════════════════════ faq ═══════════════════════════════ */
+
+.faq {
+  border-top: 1px solid var(--line);
+}
+
+/* ═══════════════════════════════ cta ═══════════════════════════════ */
+
+.cta {
+  position: relative;
+  padding-block: clamp(68px, 8vw, 112px) clamp(120px, 14vw, 190px);
+  text-align: center;
+  background: linear-gradient(180deg, var(--bg) 0%, #fff9fd 44%, var(--pink-100) 100%);
+  overflow: clip;
+}
+
+.cta-inner {
+  position: relative;
+  z-index: 2;
+}
+
+.cta .h2 {
+  margin-bottom: 14px;
+}
+
+.cta .lede {
+  max-width: 52ch;
+  margin-inline: auto;
+}
+
+.cta-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-top: clamp(26px, 3vw, 34px);
+}
+
+.cta-meta {
+  margin-top: 18px;
+  font-size: 0.76rem;
+  color: var(--ink-3);
+}
+
+/* ═════════════════════════════ footer ═════════════════════════════ */
+
+.footer {
+  border-top: 1px solid var(--line);
+  background: var(--bg);
+  padding-block: clamp(44px, 5vw, 66px) 26px;
+}
+
+.footer-inner {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.2fr) 2.4fr;
+  gap: clamp(26px, 4vw, 64px);
+}
+
+.footer-brand {
+  max-width: 300px;
+}
+
+.footer-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px -6px rgba(185, 60, 127, 0.5);
+}
+
+.footer-word {
+  margin-top: 12px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+
+.footer-brand .small {
+  margin-top: 6px;
+}
+
+.footer-cols {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 22px;
+}
+
+.footer-col {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.footer-col-title {
+  margin-bottom: 2px;
+  font-size: 0.66rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+}
+
+.footer-col a {
+  font-size: 0.92rem;
+  color: var(--ink-2);
+  transition: color 0.18s var(--ease);
+}
+
+.footer-col a:hover {
+  color: var(--pink-600);
+}
+
+.footer-base {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: clamp(30px, 3.4vw, 46px);
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+
+/* ═════════════════════════ responsive ═════════════════════════ */
+
+@media (max-width: 900px) {
+  .nav-links,
+  .nav-actions .btn--sm {
+    display: none;
+  }
+
+  .nav-toggle {
+    display: grid;
+  }
+
+  .nav-actions {
+    margin-left: auto;
+  }
+
+  .nav.is-open .nav-panel {
+    display: flex;
+  }
+
+  .nav-panel {
+    flex-direction: column;
+    gap: 2px;
+    padding: 10px var(--gutter) 20px;
+    border-top: 1px solid var(--line);
+    box-shadow: var(--shadow-md);
+  }
+
+  .nav-panel a {
+    padding: 13px 4px;
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--ink-2);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .nav-panel a:last-child {
+    margin-top: 12px;
+    padding: 13px 18px;
+    text-align: center;
+    border: 0;
+    border-radius: var(--radius-full);
+    background: var(--grad-accent);
+    color: var(--white);
+    font-weight: 560;
+    box-shadow: var(--shadow-pink);
+  }
+}
+
+@media (max-width: 860px) {
+  .footer-inner {
+    grid-template-columns: 1fr;
+  }
+
+  .footer-cols {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 26px 18px;
+  }
+
+  .footer-brand {
+    max-width: none;
+  }
+}
+
+/* the stage gets less panoramic as the viewport narrows, so the fake window
+   keeps breathing room around it */
+@media (max-width: 1279px) {
+  .screen-glass {
+    --screen-ratio: 1.7;
+  }
+}
+
+/* on a wide-but-short desktop the whole screen still has to fit above the fold */
+@media (min-width: 1500px) {
+  .screen-glass {
+    --screen-ratio: 1.85;
+  }
+}
+
+@media (max-width: 1024px) {
+  .screen-glass {
+    --screen-ratio: 1.6;
+  }
+}
+
+@media (max-width: 900px) {
+  .screen-glass {
+    --screen-ratio: 1.5;
+  }
+}
+
+@media (max-width: 800px) {
+  .screen-glass {
+    --screen-ratio: 1.45;
+  }
+}
+
+@media (max-width: 720px) {
+  .screen-glass {
+    /* keep a strip of wallpaper around the window, like a real desktop */
+    padding: 20px 14px calc(var(--dock-icon) * 1.82 + 30px);
+  }
+
+  /* on mobile the glass height follows the window: no ratio spacer */
+  .screen-glass::before {
+    display: none;
+  }
+}
