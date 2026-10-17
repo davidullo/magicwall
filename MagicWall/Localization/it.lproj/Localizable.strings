@@ -54,7 +54,7 @@
 
 /* Esplora */
 "explore.empty.title" = "Nessun video in questa categoria";
-"explore.empty.message" = "Trascina qui i video oppure assegnane uno dal menu contestuale di una card.";
+"explore.empty.message" = "Trascina qui i video oppure assegnane uno dal menu contestuale.";
 "explore.filter.all" = "Tutti";
 
 /* Libreria */
@@ -62,7 +62,7 @@
 
 /* Preferiti */
 "favorites.empty.title" = "Ancora nessun preferito";
-"favorites.empty.message" = "Tocca il cuore su una card per tenere qui i tuoi wallpaper migliori.";
+"favorites.empty.message" = "Clicca sul cuore di un wallpaper per ritrovarlo tra i preferiti.";
 
 /* Rotazione preferiti */
 "rotation.title" = "Rotazione automatica";
@@ -75,7 +75,7 @@
 "rotation.mode.different" = "Un wallpaper diverso su ogni schermo";
 "rotation.mode.short.same" = "Tutti gli schermi";
 "rotation.mode.short.different" = "Per schermo";
-"rotation.mode.help" = "Scegli se ogni schermo mostra lo stesso preferito o il suo.";
+"rotation.mode.help" = "Scegli se ogni schermo mostra lo stesso preferito o uno diverso.";
 "rotation.nextChange.different" = "Prossimo cambio tra %@ · %@";
 "rotation.interval.1" = "1 min";
 "rotation.interval.5" = "5 min";
@@ -96,7 +96,7 @@
 "empty.library.message" = "Trascina qui i tuoi video MP4/MOV oppure importali,\npoi scegli il wallpaper che darà vita al tuo desktop.";
 
 /* Card e menu contestuale */
-"card.open.help" = "Apri l'anteprima di “%@”";
+"card.open.help" = "Apri l’anteprima di “%@”";
 "card.favorite.add" = "Aggiungi ai preferiti";
 "card.favorite.remove" = "Rimuovi dai preferiti";
 "video.play" = "Riproduci come wallpaper";
@@ -151,8 +151,8 @@
 "settings.tab.general" = "Generali";
 "settings.tab.theme" = "Tema";
 "settings.tab.about" = "Informazioni";
-"settings.general.subtitle" = "Riproduzione, comportamento dell'app e libreria.";
-"settings.theme.subtitle" = "Scegli un tema e regola ogni token visivo.";
+"settings.general.subtitle" = "Riproduzione, comportamento dell’app e libreria.";
+"settings.theme.subtitle" = "Scegli un tema e regola colori, forme e tipografia.";
 
 /* Impostazioni — riproduzione */
 "settings.playback.title" = "Riproduzione";
@@ -163,21 +163,21 @@
 "settings.playback.pauseOccluded" = "Pausa con desktop nascosto";
 "settings.playback.pauseLowPower" = "Pausa in Risparmio energetico";
 "settings.playback.pauseLocked" = "Pausa con schermo bloccato";
-"settings.playback.pauseThermal" = "Pausa sotto pressione termica";
+"settings.playback.pauseThermal" = "Pausa per temperatura elevata";
 "settings.playback.paused" = "In pausa: %@";
 
-/* Wallpaper inclusi */
-"starter.section.title" = "Wallpaper inclusi";
-"starter.offer.title" = "Wallpaper pronti all'uso";
-"starter.offer.message" = "Scarica %d wallpaper video 4K (%@) e prova MagicWall subito. Puoi saltare e importare i tuoi video.";
+/* Wallpaper per iniziare */
+"starter.section.title" = "Wallpaper per iniziare";
+"starter.offer.title" = "Wallpaper per iniziare";
+"starter.offer.message" = "Scarica %d wallpaper video 4K (%@) e prova MagicWall subito. Puoi saltare questo passaggio e importare i tuoi video.";
 "starter.offer.download" = "Scarica (%@)";
 "starter.offer.later" = "Non ora";
-"starter.download.progress" = "Download dei wallpaper inclusi… %d di %d (%@ di %@)";
+"starter.download.progress" = "Download dei wallpaper per iniziare… %d di %d (%@ di %@)";
 "starter.download.cancel" = "Annulla download";
-"starter.download.done.one" = "%d wallpaper incluso aggiunto alla libreria.";
-"starter.download.done.other" = "%d wallpaper inclusi aggiunti alla libreria.";
-"starter.download.failed" = "Impossibile scaricare i wallpaper inclusi: %@";
-"starter.action.download" = "Scarica i wallpaper inclusi (%@)";
+"starter.download.done.one" = "%d wallpaper per iniziare aggiunto alla libreria.";
+"starter.download.done.other" = "%d wallpaper per iniziare aggiunti alla libreria.";
+"starter.download.failed" = "Impossibile scaricare i wallpaper per iniziare: %@";
+"starter.action.download" = "Scarica i wallpaper per iniziare (%@)";
 "starter.action.upgrade" = "Aggiorna a %@ (%@)";
 "starter.quality.title" = "Qualità";
 "starter.quality.high" = "Alta qualità";
@@ -186,7 +186,7 @@
 "starter.quality.compact.size" = "Compatta (%@)";
 "starter.quality.hint" = "Alta qualità scarica le versioni 4K complete; Compatta è più leggera e veloce da scaricare.";
 "starter.action.retry" = "Riprova";
-"starter.action.remove" = "Rimuovi i wallpaper inclusi";
+"starter.action.remove" = "Rimuovi i wallpaper per iniziare";
 "starter.state.available" = "Non scaricati";
 "starter.state.downloading" = "Download…";
 "starter.state.installed" = "Installati";
@@ -200,7 +200,7 @@
 
 /* Impostazioni — avvio */
 "settings.startup.title" = "Avvio";
-"settings.startup.launchAtLogin" = "Avvia MagicWall all'accesso";
+"settings.startup.launchAtLogin" = "Avvia MagicWall all’accesso";
 "settings.startup.requiresApproval" = "Elemento di login registrato: richiede approvazione in Impostazioni di Sistema.";
 "settings.startup.openSystemSettings" = "Apri Impostazioni di Sistema → Elementi login";
 
@@ -214,8 +214,8 @@
 /* Impostazioni — lingua */
 "settings.language" = "Lingua";
 "settings.language.default" = "Lingua predefinita";
-"settings.language.picker" = "Lingua dell'interfaccia";
-"settings.language.hint" = "La lingua dell'interfaccia cambia immediatamente.";
+"settings.language.picker" = "Lingua dell’interfaccia";
+"settings.language.hint" = "La lingua dell’interfaccia cambia immediatamente.";
 "settings.language.option.en" = "English";
 "settings.language.option.it" = "Italiano";
 
@@ -226,19 +226,19 @@
 
 /* Impostazioni — informazioni */
 "settings.about.version" = "Versione";
-"settings.about.blurb" = "MagicWall — wallpaper video locali per macOS. I tuoi video restano sul tuo Mac: le uniche richieste di rete sono il controllo aggiornamenti e i wallpaper inclusi opzionali.";
+"settings.about.blurb" = "MagicWall — wallpaper video locali per macOS. I tuoi video restano sul tuo Mac: le uniche richieste di rete sono il controllo aggiornamenti e il download opzionale dei wallpaper per iniziare.";
 
 /* Aggiornamenti (Sparkle) */
 "update.check" = "Controlla aggiornamenti…";
 "settings.updates.title" = "Aggiornamenti";
 "settings.updates.automatic" = "Controlla automaticamente gli aggiornamenti";
-"settings.updates.hint" = "Se attivo, MagicWall chiede a GitHub una volta al giorno qual è l'ultima release e ti avvisa quando un aggiornamento è pronto. Nessun dato personale viene inviato.";
+"settings.updates.hint" = "Se attivo, MagicWall chiede a GitHub una volta al giorno qual è l’ultima release e ti avvisa quando un aggiornamento è pronto. Nessun dato personale viene inviato.";
 
 /* Motivi di pausa dell'engine */
 "engine.reason.userPaused" = "In pausa manualmente";
 "engine.reason.onBattery" = "A batteria";
 "engine.reason.lowPowerMode" = "Risparmio energetico";
-"engine.reason.thermalPressure" = "Pressione termica";
+"engine.reason.thermalPressure" = "Temperatura elevata";
 "engine.reason.screenLocked" = "Schermo bloccato";
 "engine.reason.displaysAsleep" = "Schermi spenti";
 "engine.reason.systemAsleep" = "Sistema in stop";
@@ -247,7 +247,7 @@
 
 /* Menu bar */
 "menubar.open" = "Apri MagicWall";
-"menubar.noDisplay" = "Nessun display rilevato";
+"menubar.noDisplay" = "Nessun schermo rilevato";
 "menubar.status.none" = "%@: nessun wallpaper";
 "menubar.favorites.apply" = "Applica preferito";
 "menubar.favorites.empty" = "Nessun preferito";
@@ -255,7 +255,7 @@
 "menubar.rotation.enabled" = "Rotazione automatica";
 "menubar.rotation.next" = "Prossimo preferito ora";
 "menubar.nextRandom" = "Prossimo casuale";
-"menubar.stop" = "Ferma wallpaper";
+"menubar.stop" = "Interrompi wallpaper";
 "menubar.quit" = "Esci";
 
 /* Editor dei temi — temi salvati */
@@ -272,7 +272,7 @@
 
 /* Editor dei temi — colori */
 "theme.section.colors" = "Colori";
-"theme.builtIn.fork" = "I temi integrati vengono duplicati in una copia quando li modifichi.";
+"theme.builtIn.fork" = "Modificare un tema integrato ne crea una copia modificabile.";
 "theme.group.brand" = "Brand";
 "theme.group.backgrounds" = "Sfondi";
 "theme.group.text" = "Testo";
@@ -293,7 +293,7 @@
 "theme.token.surfaceHover" = "Superficie al passaggio";
 "theme.token.surfaceHover.help" = "Superficie mentre il puntatore la sorvola.";
 "theme.token.surfaceSelected" = "Superficie selezionata";
-"theme.token.surfaceSelected.help" = "Superficie dell'elemento selezionato.";
+"theme.token.surfaceSelected.help" = "Superficie dell’elemento selezionato.";
 "theme.token.textPrimary" = "Testo primario";
 "theme.token.textPrimary.help" = "Titoli e testo del corpo.";
 "theme.token.textSecondary" = "Testo secondario";
@@ -337,7 +337,7 @@
 "theme.resetToDefault" = "Ripristina predefinito";
 "theme.revert" = "Ripristina";
 "theme.revert.help" = "Ricarica il tema dai suoi valori salvati.";
-"theme.alert.saveAs.title" = "Salva tema come";
+"theme.alert.saveAs.title" = "Salva come nuovo tema";
 "theme.alert.saveAs.nameField" = "Nome del tema";
 "theme.alert.saveAs.message" = "Il tema attivo viene salvato come nuova copia modificabile.";
 

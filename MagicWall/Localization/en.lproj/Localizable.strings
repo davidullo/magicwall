@@ -32,9 +32,9 @@
 "sidebar.settings.help" = "Open MagicWall settings";
 "sidebar.pause" = "Pause wallpapers";
 "sidebar.resume" = "Resume wallpapers";
-"sidebar.shuffle.help" = "Random wallpaper on all screens";
+"sidebar.shuffle.help" = "Random wallpaper on all displays";
 "sidebar.more.help" = "More actions";
-"sidebar.screens" = "SCREENS";
+"sidebar.screens" = "DISPLAYS";
 "sidebar.noWallpaper" = "No wallpaper";
 "sidebar.rebuildLibrary" = "Rebuild library";
 
@@ -54,7 +54,7 @@
 
 /* Explore */
 "explore.empty.title" = "No videos in this category";
-"explore.empty.message" = "Drop videos here or assign one from a card's context menu.";
+"explore.empty.message" = "Drop videos here or assign one from the context menu.";
 "explore.filter.all" = "All";
 
 /* Library */
@@ -62,7 +62,7 @@
 
 /* Favorites */
 "favorites.empty.title" = "No favorites yet";
-"favorites.empty.message" = "Tap the heart on a card to keep your best wallpapers here.";
+"favorites.empty.message" = "Click the heart on a wallpaper to keep it in your favorites.";
 
 /* Favorites rotation */
 "rotation.title" = "Auto-rotate favorites";
@@ -100,8 +100,8 @@
 "card.favorite.add" = "Add to favorites";
 "card.favorite.remove" = "Remove from favorites";
 "video.play" = "Play as wallpaper";
-"video.applyToScreen" = "Apply to screen";
-"video.applyToAllScreens" = "Apply to all screens";
+"video.applyToScreen" = "Apply to display";
+"video.applyToAllScreens" = "Apply to all displays";
 "video.rename" = "Rename…";
 "video.rename.title" = "Rename video";
 "video.rename.field" = "Title";
@@ -111,7 +111,7 @@
 "video.error.rename" = "Could not rename video: %@";
 "video.delete" = "Delete video";
 "video.screenAlreadyActive" = "%@ — already active";
-"video.status.playingAll" = "“%@” is now playing on all screens.";
+"video.status.playingAll" = "“%@” is now playing on all displays.";
 "video.status.playingOnScreen" = "“%@” is now playing on %@.";
 "video.status.deleted" = "Deleted “%@”.";
 "video.error.favorite" = "Could not update favorite: %@";
@@ -134,7 +134,7 @@
 "preview.delete.help" = "Delete from library";
 
 /* Import */
-"import.panel.title" = "Import Wallpaper Videos";
+"import.panel.title" = "Import wallpaper videos";
 "import.panel.message" = "Choose MP4/MOV videos or a folder containing them.";
 "import.none" = "No importable videos found in the selection.";
 "import.summary.one" = "Imported %d video.";
@@ -151,8 +151,8 @@
 "settings.tab.general" = "General";
 "settings.tab.theme" = "Appearance";
 "settings.tab.about" = "About";
-"settings.general.subtitle" = "Playback, app behaviour and your library.";
-"settings.theme.subtitle" = "Pick a theme and fine-tune every visual token.";
+"settings.general.subtitle" = "Playback, app behavior and your library.";
+"settings.theme.subtitle" = "Pick a theme and fine-tune colors, shape and typography.";
 
 /* Settings — playback */
 "settings.playback.title" = "Playback";
@@ -168,7 +168,7 @@
 
 /* Starter wallpapers */
 "starter.section.title" = "Starter wallpapers";
-"starter.offer.title" = "Ready-made wallpapers";
+"starter.offer.title" = "Starter wallpapers";
 "starter.offer.message" = "Download %d 4K video wallpapers (%@) and try MagicWall right away. You can skip this and import your own videos instead.";
 "starter.offer.download" = "Download (%@)";
 "starter.offer.later" = "Not now";
@@ -184,7 +184,7 @@
 "starter.quality.compact" = "Compact";
 "starter.quality.high.size" = "High quality (%@)";
 "starter.quality.compact.size" = "Compact (%@)";
-"starter.quality.hint" = "High quality downloads the full 4K encodes; Compact is smaller and quicker to download.";
+"starter.quality.hint" = "High quality downloads the full 4K files; Compact is smaller and quicker to download.";
 "starter.action.retry" = "Try again";
 "starter.action.remove" = "Remove starter wallpapers";
 "starter.state.available" = "Not downloaded";
@@ -222,7 +222,7 @@
 /* Settings — maintenance */
 "settings.maintenance.title" = "Maintenance";
 "settings.maintenance.activeWallpapers" = "Active wallpapers";
-"settings.maintenance.hint" = "Removes the wallpaper from every screen.";
+"settings.maintenance.hint" = "Removes the wallpaper from every display.";
 
 /* Settings — about */
 "settings.about.version" = "Version";
@@ -262,7 +262,7 @@
 "theme.section.saved" = "Saved Themes";
 "theme.activeTheme" = "Active theme";
 "theme.manage.help" = "Manage themes";
-"theme.accent.help" = "Accent colour of this theme";
+"theme.accent.help" = "Accent color of this theme";
 "theme.pill.active" = "Active";
 "theme.pill.builtIn" = "Built-in";
 "theme.action.activate" = "Activate";
@@ -270,9 +270,9 @@
 "theme.builtIn.cannotDelete" = "Built-in themes cannot be deleted.";
 "theme.delete.help" = "Delete this theme.";
 
-/* Theme editor — colours */
+/* Theme editor — colors */
 "theme.section.colors" = "Colors";
-"theme.builtIn.fork" = "Built-in themes fork into a copy when edited.";
+"theme.builtIn.fork" = "Editing a built-in theme creates an editable copy.";
 "theme.group.brand" = "Brand";
 "theme.group.backgrounds" = "Backgrounds";
 "theme.group.text" = "Text";
@@ -281,9 +281,9 @@
 
 /* Theme tokens */
 "theme.token.accent" = "Accent";
-"theme.token.accent.help" = "Primary brand colour used by buttons and highlights.";
+"theme.token.accent.help" = "Primary brand color used by buttons and highlights.";
 "theme.token.accentText" = "Accent text";
-"theme.token.accentText.help" = "Text drawn on top of the accent colour.";
+"theme.token.accentText.help" = "Text drawn on top of the accent color.";
 "theme.token.windowBackground" = "Window background";
 "theme.token.windowBackground.help" = "Backdrop of the main window.";
 "theme.token.sidebarBackground" = "Sidebar background";
@@ -316,7 +316,7 @@
 "theme.token.divider.help" = "Separators, strokes and hairlines.";
 
 /* Theme editor — shape & typography */
-"theme.section.shape" = "Shape & Typography";
+"theme.section.shape" = "Shape & typography";
 "theme.cornerRadius" = "Corner radius";
 "theme.titleWeight" = "Title weight";
 "theme.titleWeight.regular" = "Regular";
@@ -337,7 +337,7 @@
 "theme.resetToDefault" = "Reset to Default";
 "theme.revert" = "Revert";
 "theme.revert.help" = "Reload the theme from its saved values.";
-"theme.alert.saveAs.title" = "Save Theme As";
+"theme.alert.saveAs.title" = "Save as new theme";
 "theme.alert.saveAs.nameField" = "Theme name";
 "theme.alert.saveAs.message" = "The active theme is saved as a new, editable copy.";
 

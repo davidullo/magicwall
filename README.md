@@ -42,7 +42,7 @@ Requires **macOS 15 or later**. Builds are universal (Apple Silicon and Intel).
 - **Favorites rotation** — auto-swap your favorite wallpapers every 1–60
   minutes: the same clip on every display, or a different one per display;
   every favorite is shown once per cycle before repeating.
-- **Starter wallpapers** — on first launch MagicWall offers five ready-made 4K
+- **Starter wallpapers** — on first launch MagicWall offers five hand-picked 4K
   clips (Dreamscape, Clover Rainbow, Aurora Forest, Cherry Blossom Spring,
   Colorful Underwater Scene) in two quality tiers: **High quality** (~143 MB,
   x265 encodes from the 4K masters) and **Compact** (~57 MB, for slow
