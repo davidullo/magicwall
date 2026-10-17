@@ -58,7 +58,12 @@ PUSH=1
 COMMIT=1
 
 usage() {
-    sed -n '2,46p' "$0" | sed 's/^# \{0,1\}//'
+    # Print the header comment block (everything after the shebang up to the
+    # first line of code).
+    awk 'NR == 1 { next }
+         /^#/ { sub(/^# ?/, ""); print; next }
+         /^[[:space:]]*$/ { print; next }
+         { exit }' "$0"
     exit 0
 }
 
