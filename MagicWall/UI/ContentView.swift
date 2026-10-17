@@ -19,6 +19,11 @@ struct ContentView: View {
     @State private var isDropTargeted = false
     @State private var membership: [String: Set<Int64>] = [:]
 
+    /// Automatic pause currently announced in the banner (one notice per rule
+    /// and session — the menu bar keeps showing the state anyway).
+    @State private var pauseNotice: PlaybackPolicy.Reason?
+    @State private var shownPauseNotices: Set<String> = []
+
     @State private var isStarterSheetPresented = false
 
     @State private var isNamingCategory = false
@@ -67,6 +72,9 @@ struct ContentView: View {
             rebuildMembership()
             maybePresentStarterOffer()
         }
+        .onChange(of: engine.pauseReasons) { _, reasons in
+            updatePauseNotice(for: reasons)
+        }
         .onChange(of: starterService.status) { _, newStatus in
             // The library must learn about the newly downloaded videos once the
             // batch reaches a resting state.
@@ -80,7 +88,6 @@ struct ContentView: View {
         .sheet(isPresented: $isStarterSheetPresented) {
             StarterWallpaperSheet(
                 service: starterService,
-                catalogBytes: StarterWallpaperCatalog.current.totalBytes,
                 onClose: { isStarterSheetPresented = false }
             )
             .environmentObject(theme)
@@ -228,6 +235,8 @@ struct ContentView: View {
                     tint: theme.active.dangerColor,
                     dismiss: { viewModel.lastError = nil }
                 )
+            } else if let reason = pauseNotice {
+                pauseNoticeBanner(reason)
             } else if let message = viewModel.statusMessage {
                 banner(
                     text: message,
@@ -267,7 +276,14 @@ struct ContentView: View {
             .allowsHitTesting(false)
     }
 
-    private func banner(text: String, icon: String, tint: Color, dismiss: (() -> Void)?) -> some View {
+    private func banner(
+        text: String,
+        icon: String,
+        tint: Color,
+        actionTitle: String? = nil,
+        action: (() -> Void)? = nil,
+        dismiss: (() -> Void)?
+    ) -> some View {
         HStack(spacing: 9) {
             Image(systemName: icon)
                 .font(.system(size: 12, weight: .semibold))
@@ -277,6 +293,15 @@ struct ContentView: View {
                 .font(.system(size: 12.5, weight: .medium))
                 .foregroundStyle(theme.active.textPrimaryColor)
                 .lineLimit(2)
+
+            if let actionTitle, let action {
+                Button(action: action) {
+                    Text(actionTitle)
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(tint)
+                }
+                .buttonStyle(.plain)
+            }
 
             if let dismiss {
                 Button {
@@ -299,6 +324,44 @@ struct ContentView: View {
     }
 
     // MARK: - Actions
+
+    /// Banner shown the first time an automatic rule stops the wallpaper, with
+    /// the direct fix for the battery rule so the user never has to hunt for
+    /// the setting while the desktop looks frozen.
+    private func pauseNoticeBanner(_ reason: PlaybackPolicy.Reason) -> some View {
+        banner(
+            text: L("playback.notice.paused", L("engine.reason.\(reason.rawValue)")),
+            icon: "pause.circle.fill",
+            tint: theme.active.accentColor,
+            actionTitle: reason == .onBattery ? L("playback.notice.battery.action") : nil,
+            action: reason == .onBattery ? { continueOnBattery() } : nil,
+            dismiss: { dismissPauseNotice() }
+        )
+    }
+
+    /// Keeps the wallpaper running on battery from now on (the preference is
+    /// persisted) and drops the notice.
+    private func continueOnBattery() {
+        engine.pauseOnBattery = false
+        dismissPauseNotice()
+    }
+
+    private func dismissPauseNotice() {
+        withAnimation(.easeOut(duration: 0.12)) { pauseNotice = nil }
+    }
+
+    /// Announces the first automatic pause of each rule once per session;
+    /// reasons the user cannot act on (sleep, lock, hidden desktop) stay in the
+    /// menu bar only.
+    private func updatePauseNotice(for reasons: [PlaybackPolicy.Reason]) {
+        guard let reason = reasons.first(where: \.deservesUserNotice) else {
+            if pauseNotice != nil { dismissPauseNotice() }
+            return
+        }
+        guard !shownPauseNotices.contains(reason.rawValue) else { return }
+        shownPauseNotices.insert(reason.rawValue)
+        withAnimation(.easeInOut(duration: 0.15)) { pauseNotice = reason }
+    }
 
     /// Waits a beat for the initial library load before deciding the library is
     /// empty (the view model has no "loaded" flag), then offers the starter
@@ -399,10 +462,11 @@ struct ContentView: View {
 /// surface that cannot be dismissed by clicking outside.
 private struct StarterWallpaperSheet: View {
     @ObservedObject var service: StarterWallpaperService
-    let catalogBytes: Int64
     let onClose: () -> Void
 
     @EnvironmentObject private var theme: ThemeStore
+
+    private var catalog: StarterWallpaperCatalog { StarterWallpaperCatalog.current }
 
     var body: some View {
         VStack(spacing: 20) {
@@ -421,6 +485,10 @@ private struct StarterWallpaperSheet: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
+            if case .available = service.status {
+                qualityPicker
+            }
+
             controls
         }
         .padding(.horizontal, 30)
@@ -428,6 +496,32 @@ private struct StarterWallpaperSheet: View {
         .frame(width: 430)
         .background(theme.active.windowBackgroundColor)
         .interactiveDismissDisabled(true)
+    }
+
+    /// Quality choice offered before the first download: the size label makes
+    /// the trade-off explicit instead of hiding it behind a default.
+    @ViewBuilder
+    private var qualityPicker: some View {
+        VStack(spacing: 7) {
+            Picker("", selection: Binding(
+                get: { service.quality },
+                set: { service.setQuality($0) }
+            )) {
+                ForEach(StarterWallpaperQuality.allCasesInOrder, id: \.self) { quality in
+                    Text(L("starter.quality.\(quality.rawValue).size", byteLabel(catalog.totalBytes(for: quality))))
+                        .tag(quality)
+                }
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .accessibilityIdentifier("starter.offer.quality")
+
+            Text(L("starter.quality.hint"))
+                .font(.system(size: 11))
+                .foregroundStyle(theme.active.textTertiaryColor)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+        }
     }
 
     @ViewBuilder
@@ -459,7 +553,11 @@ private struct StarterWallpaperSheet: View {
     private var message: String {
         switch service.status {
         case .available:
-            return L("starter.offer.message", byteLabel(catalogBytes))
+            return L(
+                "starter.offer.message",
+                catalog.wallpapers.count,
+                byteLabel(catalog.totalBytes(for: service.quality))
+            )
         case .downloading(let completed, let total, let downloaded, let totalBytes):
             return L(
                 "starter.download.progress",
@@ -484,7 +582,7 @@ private struct StarterWallpaperSheet: View {
         case .available:
             VStack(spacing: 10) {
                 PrimaryActionButton(
-                    title: L("starter.offer.download", byteLabel(catalogBytes)),
+                    title: L("starter.offer.download", byteLabel(catalog.totalBytes(for: service.quality))),
                     systemImage: "arrow.down.circle"
                 ) {
                     Task { await service.downloadAll() }

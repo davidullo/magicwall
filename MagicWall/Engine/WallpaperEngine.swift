@@ -26,27 +26,40 @@ final class WallpaperEngine: ObservableObject {
 
     @Published private(set) var statuses: [ScreenStatus] = []
     @Published private(set) var isRunning = false
+    /// Manual pause: per-session by design, it is never persisted.
     @Published var isPaused = false {
         didSet { reapplyPlaybackPolicy() }
     }
-    @Published var pauseOnBattery = true {
-        didSet { reapplyPlaybackPolicy() }
+    @Published var pauseOnBattery = PlaybackPreferences.default.pauseOnBattery {
+        didSet { playbackPreferencesDidChange() }
     }
-    @Published var pauseWhenOccluded = true {
-        didSet { reapplyPlaybackPolicy() }
+    @Published var pauseWhenOccluded = PlaybackPreferences.default.pauseWhenOccluded {
+        didSet { playbackPreferencesDidChange() }
     }
-    @Published var pauseOnLowPower = true {
-        didSet { reapplyPlaybackPolicy() }
+    @Published var pauseOnLowPower = PlaybackPreferences.default.pauseOnLowPower {
+        didSet { playbackPreferencesDidChange() }
     }
-    @Published var pauseWhenLocked = true {
-        didSet { reapplyPlaybackPolicy() }
+    @Published var pauseWhenLocked = PlaybackPreferences.default.pauseWhenLocked {
+        didSet { playbackPreferencesDidChange() }
     }
-    @Published var pauseOnThermalPressure = true {
-        didSet { reapplyPlaybackPolicy() }
+    @Published var pauseOnThermalPressure = PlaybackPreferences.default.pauseOnThermalPressure {
+        didSet { playbackPreferencesDidChange() }
     }
 
     /// Why playback is currently suspended (diagnostics / settings copy).
     @Published private(set) var pauseReasons: [PlaybackPolicy.Reason] = []
+
+    /// Symbol of the menu bar item: a suspended wallpaper must be visible at a
+    /// glance instead of looking like a playback problem.
+    var menuBarSymbol: String {
+        pauseReasons.isEmpty ? "sparkles.tv" : "pause.circle"
+    }
+
+    /// True while an automatic rule (rather than the manual pause) is keeping
+    /// the wallpaper still.
+    var isPausedByPolicy: Bool {
+        pauseReasons.contains { $0 != .userPaused }
+    }
 
     // MARK: Favorites rotation
 
@@ -74,6 +87,8 @@ final class WallpaperEngine: ObservableObject {
     private var occlusionTimer: Timer?
     private var rotationTimer: Timer?
     private var rotation = FavoritesRotation()
+    /// Suppresses the persist-on-set while `restorePlaybackPreferences()` runs.
+    private var isRestoringPlaybackPreferences = false
     /// Independent cycle per display, used by ``RotationMode/differentPerDisplay``.
     private var rotationsByScreen: [String: FavoritesRotation] = [:]
     private var powerSourceBox: PowerSourceCallbackBox?
@@ -105,6 +120,7 @@ final class WallpaperEngine: ObservableObject {
         refreshScreens()
         restoreAssignments()
         restoreRotationPreferences()
+        restorePlaybackPreferences()
         reapplyPlaybackPolicy()
     }
 
@@ -188,6 +204,15 @@ final class WallpaperEngine: ObservableObject {
             try? repository.clearAssignment(screenKey: key)
         }
         refreshStatuses()
+        reapplyPlaybackPolicy()
+    }
+
+    /// Re-reads a video whose file changed on disk (starter wallpaper upgraded
+    /// to another quality tier) on every screen showing it.
+    func reloadDisplayedVideo(id: String) {
+        for window in windowsByKey.values where window.videoID == id {
+            window.reloadPlayer()
+        }
         reapplyPlaybackPolicy()
     }
 
@@ -433,14 +458,9 @@ final class WallpaperEngine: ObservableObject {
     }
 
     private func currentPolicyInputs() -> PlaybackPolicy.Inputs {
-        var inputs = PlaybackPolicy.Inputs()
-        inputs.userPaused = isPaused
-        inputs.pauseOnBattery = pauseOnBattery
-        inputs.pauseOnLowPower = pauseOnLowPower
-        inputs.pauseOnThermalPressure = pauseOnThermalPressure
-        inputs.pauseWhenLocked = pauseWhenLocked
-        inputs.pauseWhenOccluded = pauseWhenOccluded
+        var inputs = PlaybackPolicy.Inputs(preferences: currentPlaybackPreferences)
 
+        inputs.userPaused = isPaused
         inputs.powerSourceIsBattery = Self.isRunningOnBattery()
         inputs.lowPowerModeEnabled = ProcessInfo.processInfo.isLowPowerModeEnabled
         inputs.thermalState = ProcessInfo.processInfo.thermalState
@@ -587,6 +607,51 @@ final class WallpaperEngine: ObservableObject {
         // On launch the restored wallpaper stays; the first change happens one
         // interval from now.
         if rotationEnabled { scheduleNextRotation() }
+    }
+
+    // MARK: - Playback preferences
+
+    /// The automatic pause rules as they are stored. Manual pause and sampled
+    /// system state are deliberately not part of it.
+    private var currentPlaybackPreferences: PlaybackPreferences {
+        PlaybackPreferences(
+            pauseOnBattery: pauseOnBattery,
+            pauseWhenOccluded: pauseWhenOccluded,
+            pauseOnLowPower: pauseOnLowPower,
+            pauseWhenLocked: pauseWhenLocked,
+            pauseOnThermalPressure: pauseOnThermalPressure
+        )
+    }
+
+    /// Any change to a rule is stored right away and re-evaluated, so "keep
+    /// playing on battery" also resumes the wallpaper that is paused now.
+    private func playbackPreferencesDidChange() {
+        if !isRestoringPlaybackPreferences {
+            persistPlaybackPreferences()
+        }
+        reapplyPlaybackPolicy()
+    }
+
+    private func persistPlaybackPreferences() {
+        try? repository.setSetting(
+            PlaybackPreferences.storageKey,
+            value: currentPlaybackPreferences.encoded()
+        )
+    }
+
+    private func restorePlaybackPreferences() {
+        guard
+            let raw = try? repository.setting(PlaybackPreferences.storageKey),
+            let preferences = PlaybackPreferences(encoded: raw)
+        else { return }
+
+        isRestoringPlaybackPreferences = true
+        pauseOnBattery = preferences.pauseOnBattery
+        pauseWhenOccluded = preferences.pauseWhenOccluded
+        pauseOnLowPower = preferences.pauseOnLowPower
+        pauseWhenLocked = preferences.pauseWhenLocked
+        pauseOnThermalPressure = preferences.pauseOnThermalPressure
+        isRestoringPlaybackPreferences = false
     }
 
     // MARK: - Occlusion fallback timer

@@ -42,6 +42,8 @@
 "playback.pause.wallpapers" = "Pausa wallpaper";
 "playback.pause.battery" = "Pausa su batteria";
 "playback.pause.occluded" = "Pausa con desktop nascosto";
+"playback.notice.paused" = "Wallpaper in pausa: %@";
+"playback.notice.battery.action" = "Continua a batteria";
 
 /* Home */
 "home.shelf.recent" = "Aggiunti di recente";
@@ -157,6 +159,7 @@
 "settings.playback.pauseWallpaper" = "Pausa wallpaper";
 "settings.playback.automatic" = "Pausa automatica";
 "settings.playback.pauseOnBattery" = "Pausa su batteria";
+"settings.playback.pauseOnBattery.subtitle" = "Ferma il wallpaper quando il Mac non è collegato alla corrente.";
 "settings.playback.pauseOccluded" = "Pausa con desktop nascosto";
 "settings.playback.pauseLowPower" = "Pausa in Risparmio energetico";
 "settings.playback.pauseLocked" = "Pausa con schermo bloccato";
@@ -165,8 +168,8 @@
 
 /* Wallpaper inclusi */
 "starter.section.title" = "Wallpaper inclusi";
-"starter.offer.title" = "Quattro wallpaper pronti all'uso";
-"starter.offer.message" = "Scarica quattro wallpaper video 4K (%@) e prova MagicWall subito. Puoi saltare e importare i tuoi video.";
+"starter.offer.title" = "Wallpaper pronti all'uso";
+"starter.offer.message" = "Scarica %d wallpaper video 4K (%@) e prova MagicWall subito. Puoi saltare e importare i tuoi video.";
 "starter.offer.download" = "Scarica (%@)";
 "starter.offer.later" = "Non ora";
 "starter.download.progress" = "Download dei wallpaper inclusi… %d di %d (%@ di %@)";
@@ -174,7 +177,14 @@
 "starter.download.done.one" = "%d wallpaper incluso aggiunto alla libreria.";
 "starter.download.done.other" = "%d wallpaper inclusi aggiunti alla libreria.";
 "starter.download.failed" = "Impossibile scaricare i wallpaper inclusi: %@";
-"starter.action.download" = "Scarica i wallpaper inclusi";
+"starter.action.download" = "Scarica i wallpaper inclusi (%@)";
+"starter.action.upgrade" = "Aggiorna a %@ (%@)";
+"starter.quality.title" = "Qualità";
+"starter.quality.high" = "Alta qualità";
+"starter.quality.compact" = "Compatta";
+"starter.quality.high.size" = "Alta qualità (%@)";
+"starter.quality.compact.size" = "Compatta (%@)";
+"starter.quality.hint" = "Alta qualità scarica le versioni 4K complete; Compatta è più leggera e veloce da scaricare.";
 "starter.action.retry" = "Riprova";
 "starter.action.remove" = "Rimuovi i wallpaper inclusi";
 "starter.state.available" = "Non scaricati";
@@ -183,7 +193,7 @@
 "starter.state.partial" = "Incompleti";
 "starter.state.dismissed" = "Saltati";
 "starter.state.failed" = "Download non riuscito";
-"starter.settings.hint" = "Quattro wallpaper selezionati, scaricati una sola volta su richiesta. Arrivano in libreria tra i preferiti.";
+"starter.settings.hint" = "Wallpaper selezionati, scaricati una sola volta su richiesta. Arrivano in libreria tra i preferiti.";
 
 /* Impostazioni — applicazione */
 "settings.application.title" = "Applicazione";

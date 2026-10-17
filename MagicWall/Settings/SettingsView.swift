@@ -176,7 +176,7 @@ struct GeneralSettingsView: View {
 
                     Text(L(
                         "settings.playback.paused",
-                        engine.pauseReasons.map { L("engine.reason.\($0.rawValue)") }.joined(separator: ", ")
+                        playbackPauseSummary(engine.pauseReasons)
                     ))
                     .font(.system(size: 11))
                     .foregroundStyle(theme.active.textSecondaryColor)
@@ -220,6 +220,7 @@ struct GeneralSettingsView: View {
                 VStack(spacing: 0) {
                     SettingsToggleRow(
                         title: L("settings.playback.pauseOnBattery"),
+                        subtitle: L("settings.playback.pauseOnBattery.subtitle"),
                         isOn: $engine.pauseOnBattery
                     )
                     SettingsDivider()
@@ -359,6 +360,28 @@ struct GeneralSettingsView: View {
                 starterAction
             }
 
+            if !starterIsDownloading {
+                SettingsDivider()
+
+                SettingsRow(
+                    L("starter.quality.title"),
+                    subtitle: L("starter.quality.hint")
+                ) {
+                    Picker("", selection: Binding(
+                        get: { starterService.quality },
+                        set: { starterService.setQuality($0) }
+                    )) {
+                        ForEach(StarterWallpaperQuality.allCasesInOrder, id: \.self) { quality in
+                            Text(L("starter.quality.\(quality.rawValue)")).tag(quality)
+                        }
+                    }
+                    .labelsHidden()
+                    .pickerStyle(.menu)
+                    .frame(width: 145)
+                    .accessibilityIdentifier("settings.starter.quality")
+                }
+            }
+
             if case .downloading(let completed, let total, let downloaded, let totalBytes) = starterService.status {
                 SettingsDivider()
 
@@ -416,12 +439,31 @@ struct GeneralSettingsView: View {
         }
     }
 
+    /// Title of the primary starter action: plain download, fill the gaps, or
+    /// switch tiers — with the size of what is about to be downloaded.
+    private var starterDownloadTitle: String {
+        let catalog = StarterWallpaperCatalog.current
+        let bytes = byteLabel(catalog.totalBytes(for: starterService.quality))
+
+        if let installed = starterService.installedQuality(), installed != starterService.quality {
+            let tier = L("starter.quality.\(starterService.quality.rawValue)")
+            return L("starter.action.upgrade", tier, bytes)
+        }
+
+        return L("starter.action.download", bytes)
+    }
+
+    private var starterIsDownloading: Bool {
+        if case .downloading = starterService.status { return true }
+        return false
+    }
+
     @ViewBuilder
     private var starterAction: some View {
         switch starterService.status {
         case .available, .failed:
             SettingsActionButton(
-                title: L("starter.action.download"),
+                title: starterDownloadTitle,
                 systemImage: "arrow.down.circle",
                 kind: .primary
             ) {
@@ -444,7 +486,7 @@ struct GeneralSettingsView: View {
         case .partial:
             HStack(spacing: 8) {
                 SettingsActionButton(
-                    title: L("starter.action.download"),
+                    title: starterDownloadTitle,
                     systemImage: "arrow.down.circle"
                 ) {
                     Task { await starterService.downloadAll() }

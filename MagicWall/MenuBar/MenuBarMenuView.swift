@@ -75,6 +75,10 @@ struct MenuBarMenuView: View {
 
     @ViewBuilder
     private var playbackToggles: some View {
+        if !engine.pauseReasons.isEmpty {
+            Text(L("settings.playback.paused", playbackPauseSummary(engine.pauseReasons)))
+        }
+
         Toggle(L("playback.pause.wallpapers"), isOn: $engine.isPaused)
         Toggle(L("playback.pause.battery"), isOn: $engine.pauseOnBattery)
         Toggle(L("playback.pause.occluded"), isOn: $engine.pauseWhenOccluded)

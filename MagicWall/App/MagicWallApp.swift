@@ -16,9 +16,16 @@ struct MagicWallApp: App {
         let environment = AppEnvironment.bootstrap()
         _viewModel = StateObject(wrappedValue: environment.viewModel)
         _engine = StateObject(wrappedValue: environment.engine)
-        _starterService = StateObject(
-            wrappedValue: StarterWallpaperService(repository: environment.repository)
-        )
+
+        // A starter wallpaper replaced by an upgrade (quality tier) has to be
+        // re-read by the engine when it is currently on screen.
+        let starterService = StarterWallpaperService(repository: environment.repository)
+        let engine = environment.engine
+        starterService.onVideoReplaced = { [weak engine] videoID in
+            engine?.reloadDisplayedVideo(id: videoID)
+        }
+        _starterService = StateObject(wrappedValue: starterService)
+
         AppDelegate.engine = environment.engine
     }
 
@@ -60,7 +67,8 @@ struct MagicWallApp: App {
                 .environmentObject(updater)
                 .id(localization.language)
         } label: {
-            Label("MagicWall", systemImage: "sparkles.tv")
+            MenuBarLabel()
+                .environmentObject(engine)
         }
 
         Settings {
@@ -104,6 +112,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         false
+    }
+
+    /// The engine must run even when the library window never appears — a login
+    /// item launch or a restored session must still bring back the assigned
+    /// wallpapers and the saved playback rules. `start()` is idempotent, so the
+    /// main window's `.task` keeps calling it harmlessly.
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        AppDelegate.engine?.start()
     }
 
     /// macOS calls this when the app is activated while running — typically a

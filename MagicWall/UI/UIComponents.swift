@@ -37,6 +37,13 @@ func videoCountLabel(_ count: Int) -> String {
     count == 1 ? L("common.videoCount.one", count) : L("common.videoCount.other", count)
 }
 
+/// Localized, comma-separated list of the reasons keeping the wallpaper still,
+/// e.g. "On battery power" or "Low Power Mode, Screen locked".
+@MainActor
+func playbackPauseSummary(_ reasons: [PlaybackPolicy.Reason]) -> String {
+    reasons.map { L("engine.reason.\($0.rawValue)") }.joined(separator: ", ")
+}
+
 /// Label of a rotation interval, e.g. "15 min" / "1 hour".
 @MainActor
 func rotationIntervalLabel(_ interval: RotationInterval) -> String {

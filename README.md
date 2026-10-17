@@ -42,12 +42,17 @@ Requires **macOS 15 or later**. Builds are universal (Apple Silicon and Intel).
 - **Favorites rotation** — auto-swap your favorite wallpapers every 1–60
   minutes: the same clip on every display, or a different one per display;
   every favorite is shown once per cycle before repeating.
-- **Starter wallpapers** — on first launch MagicWall offers four ready-made 4K
+- **Starter wallpapers** — on first launch MagicWall offers five ready-made 4K
   clips (Dreamscape, Clover Rainbow, Aurora Forest, Cherry Blossom Spring,
-  ~38 MB in total). They are downloaded only if you accept, can be skipped and
-  removed later from Settings.
-- **Power policy** — automatic pausing on battery, Low Power Mode, thermal
-  pressure, screen lock or occluded desktop, with recovery after sleep/wake.
+  Colorful Underwater Scene) in two quality tiers: **High quality** (~143 MB,
+  x265 encodes from the 4K masters) and **Compact** (~57 MB, for slow
+  connections). They are downloaded only if you accept, can be skipped, and can
+  be removed or re-downloaded in the other quality later from Settings.
+- **Power policy** — the wallpaper keeps playing on battery: automatic pausing
+  is available (and off by default for the battery rule) for Low Power Mode,
+  thermal pressure, screen lock or occluded desktop, with recovery after
+  sleep/wake. When a rule stops it, the menu bar icon and a one-off notice say
+  why, and every rule can be toggled in Settings → Playback.
 - **Menu bar** — pause, shuffle, favorites, rotation and stop without opening
   the window.
 - **Themes** — editable design tokens (colors, corner radii, gradients) plus

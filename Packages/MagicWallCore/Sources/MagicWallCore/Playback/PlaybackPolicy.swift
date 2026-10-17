@@ -5,12 +5,12 @@ import Foundation
 /// The policy has no access to AppKit, IOKit, timers or UI: every piece of
 /// system state is injected through ``Inputs``. That keeps the "should the
 /// wallpaper be playing?" decision deterministic and easy to reason about,
-/// while ``WallpaperEngine`` owns the (side-effecting) sampling of the system
-/// and the applying of the result.
-struct PlaybackPolicy {
+/// while the app's `WallpaperEngine` owns the (side-effecting) sampling of the
+/// system and the applying of the result.
+public enum PlaybackPolicy {
     /// Why playback is currently suspended. Several reasons can hold at once;
     /// the first one is the most "user intent"-ish, which is handy for UI copy.
-    enum Reason: String, Equatable, CaseIterable {
+    public enum Reason: String, Equatable, Hashable, CaseIterable, Sendable {
         case userPaused
         case onBattery
         case lowPowerMode
@@ -21,18 +21,15 @@ struct PlaybackPolicy {
         case sessionInactive
         case desktopOccluded
 
-        /// Short, human readable label (English, matches the rest of the app).
-        var label: String {
+        /// Whether the user can act on this reason from the UI. Used to show a
+        /// one-off in-app notice instead of pausing silently.
+        public var deservesUserNotice: Bool {
             switch self {
-            case .userPaused: return "Paused manually"
-            case .onBattery: return "On battery power"
-            case .lowPowerMode: return "Low Power Mode"
-            case .thermalPressure: return "Thermal pressure"
-            case .screenLocked: return "Screen locked"
-            case .displaysAsleep: return "Displays asleep"
-            case .systemAsleep: return "System asleep"
-            case .sessionInactive: return "Session inactive"
-            case .desktopOccluded: return "Desktop hidden"
+            case .onBattery, .lowPowerMode, .thermalPressure:
+                return true
+            case .userPaused, .screenLocked, .displaysAsleep, .systemAsleep,
+                 .sessionInactive, .desktopOccluded:
+                return false
             }
         }
     }
@@ -41,26 +38,37 @@ struct PlaybackPolicy {
     ///
     /// The first block is user intent (preferences + manual pause), the second
     /// is sampled system state.
-    struct Inputs: Equatable {
+    public struct Inputs: Equatable, Sendable {
         // MARK: User intent
 
-        var userPaused = false
-        var pauseOnBattery = true
-        var pauseOnLowPower = true
-        var pauseOnThermalPressure = true
-        var pauseWhenLocked = true
-        var pauseWhenOccluded = true
+        public var userPaused = false
+        public var pauseOnBattery = PlaybackPreferences.default.pauseOnBattery
+        public var pauseOnLowPower = PlaybackPreferences.default.pauseOnLowPower
+        public var pauseOnThermalPressure = PlaybackPreferences.default.pauseOnThermalPressure
+        public var pauseWhenLocked = PlaybackPreferences.default.pauseWhenLocked
+        public var pauseWhenOccluded = PlaybackPreferences.default.pauseWhenOccluded
 
         // MARK: System state
 
-        var powerSourceIsBattery = false
-        var lowPowerModeEnabled = false
-        var thermalState: ProcessInfo.ThermalState = .nominal
-        var screenIsLocked = false
-        var displaysAreAsleep = false
-        var systemIsAsleep = false
-        var sessionIsActive = true
-        var desktopIsOccluded = false
+        public var powerSourceIsBattery = false
+        public var lowPowerModeEnabled = false
+        public var thermalState: ProcessInfo.ThermalState = .nominal
+        public var screenIsLocked = false
+        public var displaysAreAsleep = false
+        public var systemIsAsleep = false
+        public var sessionIsActive = true
+        public var desktopIsOccluded = false
+
+        public init() {}
+
+        /// Seeds the user-intent block from the persisted rules.
+        public init(preferences: PlaybackPreferences) {
+            self.pauseOnBattery = preferences.pauseOnBattery
+            self.pauseOnLowPower = preferences.pauseOnLowPower
+            self.pauseOnThermalPressure = preferences.pauseOnThermalPressure
+            self.pauseWhenLocked = preferences.pauseWhenLocked
+            self.pauseWhenOccluded = preferences.pauseWhenOccluded
+        }
     }
 
     /// Ordered list of the reasons currently suspending playback.
@@ -68,7 +76,7 @@ struct PlaybackPolicy {
     /// Reasons that are not gated by a preference (sleep, lock of the session)
     /// always apply: a sleeping or locked machine must never keep a video
     /// decoding in the background.
-    static func pauseReasons(for inputs: Inputs) -> [Reason] {
+    public static func pauseReasons(for inputs: Inputs) -> [Reason] {
         var reasons: [Reason] = []
 
         if inputs.userPaused { reasons.append(.userPaused) }
@@ -87,7 +95,7 @@ struct PlaybackPolicy {
         return reasons
     }
 
-    static func shouldPlay(_ inputs: Inputs) -> Bool {
+    public static func shouldPlay(_ inputs: Inputs) -> Bool {
         pauseReasons(for: inputs).isEmpty
     }
 }

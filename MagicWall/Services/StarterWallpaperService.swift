@@ -4,20 +4,26 @@ import MagicWallCore
 
 /// Downloads the bundled "starter" wallpapers on demand.
 ///
+/// Every wallpaper ships in two quality tiers (`high` and `compact`). The
+/// preferred tier is persisted in `app_settings`; switching tier replaces the
+/// file of the same `starter-<id>` record, so favorites, categories and
+/// per-screen assignments survive an upgrade.
+///
 /// The service owns no authoritative state of its own: what is installed is
 /// always derived from the library database (a `starter-<id>` record — or any
-/// record whose `contentHash` matches the catalog — with a file on disk). The
-/// only thing persisted is whether the first-launch offer was dismissed.
+/// record whose `contentHash` matches a catalog variant — with a file on disk).
+/// The only things persisted are whether the first-launch offer was dismissed
+/// and the preferred quality tier.
 @MainActor
 final class StarterWallpaperService: ObservableObject {
     enum Status: Equatable {
-        /// Nothing installed, never dismissed-or-downloaded.
+        /// Nothing installed at the selected tier, never dismissed-or-downloaded.
         case available
         /// A batch download is in flight.
         case downloading(completed: Int, total: Int, bytesDownloaded: Int64, bytesTotal: Int64)
-        /// Every catalog wallpaper is present in the library.
+        /// Every catalog wallpaper is present at the selected tier.
         case installed
-        /// Some, but not all, catalog wallpapers are present.
+        /// Some, but not all, catalog wallpapers are present at the selected tier.
         case partial(installed: Int)
         /// The last download attempt failed.
         case failed(String)
@@ -28,6 +34,7 @@ final class StarterWallpaperService: ObservableObject {
         case httpStatus(Int)
         case sizeMismatch(expected: Int64, actual: Int64)
         case checksumMismatch
+        case missingVariant
 
         var errorDescription: String? {
             switch self {
@@ -39,12 +46,16 @@ final class StarterWallpaperService: ObservableObject {
                 return "Downloaded file size mismatch (expected \(expected) bytes, got \(actual))."
             case .checksumMismatch:
                 return "The downloaded file failed its integrity check."
+            case .missingVariant:
+                return "The catalog does not list a file for this wallpaper."
             }
         }
     }
 
     /// Settings key holding the persisted `{"dismissed": Bool}` JSON blob.
     static let settingsKey = "starterWallpapers.v1"
+    /// Settings key holding the preferred quality tier.
+    static let qualitySettingsKey = "starterWallpapers.quality"
     /// Prefix used for library records created by this service.
     static let videoIDPrefix = "starter-"
     /// Environment flag that suppresses the automatic first-launch offer.
@@ -53,6 +64,12 @@ final class StarterWallpaperService: ObservableObject {
     @Published private(set) var status: Status = .available
     /// Whether the first-launch offer was already shown and skipped.
     @Published private(set) var hasBeenOffered: Bool = false
+    /// Quality tier the user wants in the library.
+    @Published private(set) var quality: StarterWallpaperQuality
+
+    /// Invoked with the video id whenever a file on disk was replaced by a
+    /// different tier, so the engine can reload it if it is on screen.
+    var onVideoReplaced: (@MainActor (String) -> Void)?
 
     private let repository: LibraryRepository
     private var downloadTask: Task<Void, Never>?
@@ -63,6 +80,8 @@ final class StarterWallpaperService: ObservableObject {
 
     init(repository: LibraryRepository) {
         self.repository = repository
+        let stored = (try? repository.setting(Self.qualitySettingsKey)) ?? nil
+        self.quality = stored.flatMap(StarterWallpaperQuality.init(rawValue:)) ?? .default
         self.hasBeenOffered = Self.persistedDismissed(in: repository)
         refreshStatus()
     }
@@ -96,11 +115,40 @@ final class StarterWallpaperService: ObservableObject {
         }
     }
 
-    /// Number of catalog wallpapers currently present in the library.
+    /// Number of catalog wallpapers installed at the selected tier.
     func installedCount() -> Int {
+        installedCount(in: quality)
+    }
+
+    /// Number of catalog wallpapers installed at a specific tier.
+    func installedCount(in quality: StarterWallpaperQuality) -> Int {
         StarterWallpaperCatalog.current.wallpapers.reduce(into: 0) { count, wallpaper in
-            if existingVideo(for: wallpaper) != nil { count += 1 }
+            if installedQuality(for: wallpaper) == quality { count += 1 }
         }
+    }
+
+    /// Tier currently on disk for a wallpaper: a variant whose checksum matches
+    /// the record's content hash, or `compact` for a copy left by an older pack
+    /// whose bytes are no longer in the catalog. `nil` when absent.
+    func installedQuality(for wallpaper: StarterWallpaper) -> StarterWallpaperQuality? {
+        guard let video = existingVideo(for: wallpaper) else { return nil }
+
+        if let match = wallpaper.variants.first(where: {
+            !$0.sha256.isEmpty
+                && $0.sha256.caseInsensitiveCompare(video.contentHash ?? "") == .orderedSame
+        }) {
+            return match.quality
+        }
+
+        return .compact
+    }
+
+    /// Tier shared by every installed wallpaper, or `nil` when nothing is
+    /// installed or the library mixes tiers.
+    func installedQuality() -> StarterWallpaperQuality? {
+        let tiers = StarterWallpaperCatalog.current.wallpapers.compactMap { installedQuality(for: $0) }
+        guard let first = tiers.first else { return nil }
+        return tiers.allSatisfy { $0 == first } ? first : nil
     }
 
     /// Library record IDs of every installed catalog wallpaper, in catalog
@@ -109,6 +157,17 @@ final class StarterWallpaperService: ObservableObject {
         StarterWallpaperCatalog.current.wallpapers.compactMap { wallpaper in
             existingVideo(for: wallpaper)?.id
         }
+    }
+
+    // MARK: - Quality
+
+    /// Switches tier: the next download replaces the files of the existing
+    /// `starter-<id>` records, so favorites, categories and assignments stay.
+    func setQuality(_ newQuality: StarterWallpaperQuality) {
+        guard newQuality != quality else { return }
+        quality = newQuality
+        try? repository.setSetting(Self.qualitySettingsKey, value: newQuality.rawValue)
+        refreshStatus()
     }
 
     // MARK: - Offer
@@ -121,22 +180,23 @@ final class StarterWallpaperService: ObservableObject {
 
     // MARK: - Download
 
-    /// Downloads every missing catalog wallpaper, one at a time. Idempotent:
-    /// returns immediately when a download is already running or everything is
-    /// installed, and reuses (without copying) any record whose content hash
-    /// already matches.
+    /// Downloads every catalog wallpaper that is missing at the selected tier,
+    /// one at a time. Idempotent: returns immediately when a download is
+    /// already running or everything is installed at that tier, and reuses
+    /// (without copying) any record whose content hash already matches.
     func downloadAll() async {
         if case .downloading = status { return }
 
         let catalog = StarterWallpaperCatalog.current
+        let target = quality
         var missing: [StarterWallpaper] = []
         var completed = 0
         var bytesDownloaded: Int64 = 0
 
         for wallpaper in catalog.wallpapers {
-            if existingVideo(for: wallpaper) != nil {
+            if installedQuality(for: wallpaper) == target {
                 completed += 1
-                bytesDownloaded += max(wallpaper.bytes, 0)
+                bytesDownloaded += variantBytes(of: wallpaper, quality: target)
             } else {
                 missing.append(wallpaper)
             }
@@ -148,7 +208,7 @@ final class StarterWallpaperService: ObservableObject {
         }
 
         let total = catalog.wallpapers.count
-        let bytesTotal = catalog.totalBytes
+        let bytesTotal = catalog.totalBytes(for: target)
         status = .downloading(
             completed: completed,
             total: total,
@@ -160,6 +220,7 @@ final class StarterWallpaperService: ObservableObject {
             guard let self else { return }
             await self.runDownload(
                 missing,
+                quality: target,
                 completed: completed,
                 bytesDownloaded: bytesDownloaded,
                 total: total,
@@ -185,6 +246,7 @@ final class StarterWallpaperService: ObservableObject {
 
     private func runDownload(
         _ missing: [StarterWallpaper],
+        quality: StarterWallpaperQuality,
         completed initialCompleted: Int,
         bytesDownloaded initialBytes: Int64,
         total: Int,
@@ -200,9 +262,9 @@ final class StarterWallpaperService: ObservableObject {
             }
 
             do {
-                try await download(wallpaper)
+                try await download(wallpaper, quality: quality)
                 completed += 1
-                bytesDownloaded += max(wallpaper.bytes, 0)
+                bytesDownloaded += variantBytes(of: wallpaper, quality: quality)
                 status = .downloading(
                     completed: min(completed, total),
                     total: total,
@@ -223,8 +285,18 @@ final class StarterWallpaperService: ObservableObject {
         refreshStatus()
     }
 
-    private func download(_ wallpaper: StarterWallpaper) async throws {
-        let remoteURL = StarterWallpaperCatalog.current.remoteURL(for: wallpaper)
+    /// Size of the file that will be installed for a tier, when the manifest
+    /// knows it (0 otherwise).
+    private func variantBytes(of wallpaper: StarterWallpaper, quality: StarterWallpaperQuality) -> Int64 {
+        max(wallpaper.installableVariant(quality)?.bytes ?? 0, 0)
+    }
+
+    private func download(_ wallpaper: StarterWallpaper, quality: StarterWallpaperQuality) async throws {
+        guard let variant = wallpaper.installableVariant(quality) else {
+            throw DownloadError.missingVariant
+        }
+
+        let remoteURL = StarterWallpaperCatalog.current.remoteURL(for: wallpaper, quality: variant.quality)
 
         let (temporaryURL, response) = try await URLSession.shared.download(from: remoteURL)
         defer { try? FileManager.default.removeItem(at: temporaryURL) }
@@ -232,16 +304,16 @@ final class StarterWallpaperService: ObservableObject {
         guard let http = response as? HTTPURLResponse else { throw DownloadError.badResponse }
         guard http.statusCode == 200 else { throw DownloadError.httpStatus(http.statusCode) }
 
-        if wallpaper.bytes > 0 {
+        if variant.bytes > 0 {
             let actual = Self.fileSize(at: temporaryURL)
-            guard actual == wallpaper.bytes else {
-                throw DownloadError.sizeMismatch(expected: wallpaper.bytes, actual: actual)
+            guard actual == variant.bytes else {
+                throw DownloadError.sizeMismatch(expected: variant.bytes, actual: actual)
             }
         }
 
-        if !wallpaper.sha256.isEmpty {
+        if !variant.sha256.isEmpty {
             let digest = try await SHA256Hasher().sha256(of: temporaryURL)
-            guard digest.caseInsensitiveCompare(wallpaper.sha256) == .orderedSame else {
+            guard digest.caseInsensitiveCompare(variant.sha256) == .orderedSame else {
                 throw DownloadError.checksumMismatch
             }
         }
@@ -254,10 +326,19 @@ final class StarterWallpaperService: ObservableObject {
         let posterDestination = AppPaths.posterDestination(for: videoID)
         let fileManager = FileManager.default
 
-        if fileManager.fileExists(atPath: destination.path) {
-            try fileManager.removeItem(at: destination)
+        // Stage the verified download next to its destination and swap it in
+        // only now: a failed upgrade must leave the installed quality intact.
+        let staged = Self.stagedURL(for: destination)
+        if fileManager.fileExists(atPath: staged.path) {
+            try fileManager.removeItem(at: staged)
         }
-        try fileManager.moveItem(at: temporaryURL, to: destination)
+        try fileManager.moveItem(at: temporaryURL, to: staged)
+
+        if fileManager.fileExists(atPath: destination.path) {
+            _ = try fileManager.replaceItemAt(destination, withItemAt: staged)
+        } else {
+            try fileManager.moveItem(at: staged, to: destination)
+        }
 
         var posterPath: String?
         do {
@@ -289,8 +370,8 @@ final class StarterWallpaperService: ObservableObject {
             fps: metadata?.fps ?? 0,
             codec: metadata?.codec,
             bitrate: metadata?.bitrate ?? 0,
-            fileSize: wallpaper.bytes > 0 ? wallpaper.bytes : (metadata?.fileSize ?? 0),
-            contentHash: wallpaper.sha256.isEmpty ? nil : wallpaper.sha256,
+            fileSize: variant.bytes > 0 ? variant.bytes : (metadata?.fileSize ?? 0),
+            contentHash: variant.sha256.isEmpty ? nil : variant.sha256,
             posterPath: posterPath,
             source: .starter
         )
@@ -305,38 +386,49 @@ final class StarterWallpaperService: ObservableObject {
            let categoryID = nature.id {
             try? repository.setCategories([categoryID], forVideo: videoID)
         }
+
+        // The bytes behind an existing record were replaced: the engine has to
+        // re-read the file when that wallpaper is currently on screen.
+        onVideoReplaced?(videoID)
     }
 
     // MARK: - Installed detection
 
     /// Returns the library record for a wallpaper: either the managed
-    /// `starter-<id>` record, or a pre-existing record with the same content
-    /// hash (dedup). Requires the backing file to actually exist.
+    /// `starter-<id>` record, or a pre-existing record whose content hash
+    /// matches one of the catalog variants (dedup). Requires the backing file
+    /// to actually exist.
     private func existingVideo(for wallpaper: StarterWallpaper) -> Video? {
         if let video = try? repository.video(id: "\(Self.videoIDPrefix)\(wallpaper.id)"),
            FileManager.default.fileExists(atPath: video.filePath) {
             return video
         }
 
-        if !wallpaper.sha256.isEmpty,
-           let video = try? repository.video(contentHash: wallpaper.sha256),
-           FileManager.default.fileExists(atPath: video.filePath) {
-            return video
+        for variant in wallpaper.variants where !variant.sha256.isEmpty {
+            if let video = try? repository.video(contentHash: variant.sha256),
+               FileManager.default.fileExists(atPath: video.filePath) {
+                return video
+            }
         }
 
         return nil
     }
 
     /// Removes the artifacts of a single failed or cancelled wallpaper
-    /// download, leaving already-installed ones untouched.
+    /// download. A wallpaper that is already installed is left alone: only a
+    /// staged file is dropped, so a failed quality upgrade keeps the previous
+    /// tier playable.
     private func cleanupPartial(_ wallpaper: StarterWallpaper) {
         let videoID = "\(Self.videoIDPrefix)\(wallpaper.id)"
         let fileManager = FileManager.default
 
         let destination = AppPaths.managedVideoDestination(id: videoID, fileExtension: "mp4")
-        if fileManager.fileExists(atPath: destination.path) {
-            try? fileManager.removeItem(at: destination)
+        let staged = Self.stagedURL(for: destination)
+        if fileManager.fileExists(atPath: staged.path) {
+            try? fileManager.removeItem(at: staged)
         }
+
+        guard !fileManager.fileExists(atPath: destination.path) else { return }
 
         let poster = AppPaths.posterDestination(for: videoID)
         if fileManager.fileExists(atPath: poster.path) {
@@ -344,6 +436,14 @@ final class StarterWallpaperService: ObservableObject {
         }
 
         try? repository.deleteVideo(id: videoID)
+    }
+
+    /// Temporary name used while a download is being verified, next to the
+    /// final file so the swap stays on the same volume.
+    private static func stagedURL(for destination: URL) -> URL {
+        destination
+            .deletingLastPathComponent()
+            .appendingPathComponent(destination.lastPathComponent + ".incoming")
     }
 
     private static func fileSize(at url: URL) -> Int64 {

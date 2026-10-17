@@ -27,6 +27,9 @@ final class WallpaperDesktopWindow: NSWindow {
     private var queuePlayer: AVQueuePlayer?
     private var looper: AVPlayerLooper?
     private(set) var videoID: String?
+    /// File currently loaded, kept so the pipeline can be rebuilt after the
+    /// bytes on disk were replaced (starter wallpaper quality upgrade).
+    private var loadedURL: URL?
 
     /// Invoked on the main thread when the desktop window's occlusion state
     /// changes. Owned by ``WallpaperEngine``; the callback only reads live
@@ -84,6 +87,14 @@ final class WallpaperDesktopWindow: NSWindow {
         }
         alphaValue = 1
         orderFrontRegardless()
+    }
+
+    /// Rebuilds the media pipeline from the file on disk. Used when the file
+    /// behind the current wallpaper was replaced (starter quality upgrade) —
+    /// `show(video:)` would keep running the old bytes because the id matches.
+    func reloadPlayer() {
+        guard let loadedURL else { return }
+        loadPlayer(for: loadedURL)
     }
 
     /// Starts or suspends decoding. Never allocates or tears down the player.
@@ -144,6 +155,7 @@ final class WallpaperDesktopWindow: NSWindow {
         looper = nil
         queuePlayer = nil
         playerLayer.player = nil
+        loadedURL = nil
     }
 
     private func loadPlayer(for url: URL) {
@@ -168,6 +180,7 @@ final class WallpaperDesktopWindow: NSWindow {
         playerLayer.player = player
         queuePlayer = player
         looper = newLooper
+        loadedURL = url
         player.play()
     }
 }
