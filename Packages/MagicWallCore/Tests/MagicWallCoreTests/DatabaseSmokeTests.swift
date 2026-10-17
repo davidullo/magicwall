@@ -51,4 +51,18 @@ final class DatabaseSmokeTests: XCTestCase {
         }
         XCTAssertEqual(try repository.video(id: video.id)?.title, "Original")
     }
+
+    func testAppSettingsRoundTrip() throws {
+        let database = try AppDatabase.inMemory()
+        let repository = GRDBLibraryRepository(database: database)
+
+        XCTAssertNil(try repository.setting("missing"))
+
+        try repository.setSetting("greeting", value: "hello")
+        try repository.setSetting("greeting", value: "ciao")
+        XCTAssertEqual(try repository.setting("greeting"), "ciao")
+
+        try repository.setSetting("greeting", value: nil)
+        XCTAssertNil(try repository.setting("greeting"))
+    }
 }

@@ -37,6 +37,12 @@ func videoCountLabel(_ count: Int) -> String {
     count == 1 ? L("common.videoCount.one", count) : L("common.videoCount.other", count)
 }
 
+/// Label of a rotation interval, e.g. "15 min" / "1 hour".
+@MainActor
+func rotationIntervalLabel(_ interval: RotationInterval) -> String {
+    L("rotation.interval.\(interval.minutes)")
+}
+
 // MARK: - Poster
 
 /// Crops a poster into a fixed aspect ratio box (16:9 by default).

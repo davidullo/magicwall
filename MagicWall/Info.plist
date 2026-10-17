@@ -43,5 +43,19 @@
 	<true/>
 	<key>NSHumanReadableCopyright</key>
 	<string>MagicWall</string>
+	<key>SUAutomaticallyUpdate</key>
+	<false/>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
+	<key>SUFeedURL</key>
+	<string>https://github.com/davidullo/magicwall/releases/latest/download/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>CojlMizGL3KbVVVeyghTURg8Sd2gxgkcBFxvwN7j4iA=</string>
+	<key>SURequireSignedFeed</key>
+	<true/>
+	<key>SUScheduledCheckInterval</key>
+	<integer>86400</integer>
+	<key>SUVerifyUpdateBeforeExtraction</key>
+	<true/>
 </dict>
 </plist>

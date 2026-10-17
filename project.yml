@@ -13,6 +13,9 @@ settings:
 packages:
   MagicWallCore:
     path: Packages/MagicWallCore
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    exactVersion: "2.10.0"
 targets:
   MagicWall:
     type: application
@@ -23,6 +26,7 @@ targets:
     dependencies:
       - package: MagicWallCore
         product: MagicWallCore
+      - package: Sparkle
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: app.magicwall
@@ -30,8 +34,8 @@ targets:
         CODE_SIGN_STYLE: Manual
         CODE_SIGN_IDENTITY: "-"
         DEVELOPMENT_TEAM: ""
-        MARKETING_VERSION: "0.1.0"
-        CURRENT_PROJECT_VERSION: "1"
+        MARKETING_VERSION: "0.2.0"
+        CURRENT_PROJECT_VERSION: "2"
         COMBINE_HIDPI_IMAGES: YES
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
       configs:
@@ -48,6 +52,18 @@ targets:
         LSApplicationCategoryType: public.app-category.utilities
         NSHumanReadableCopyright: "MagicWall"
         NSHighResolutionCapable: true
+        # Sparkle auto-updates. The feed is the appcast.xml attached to the
+        # latest GitHub release, so the URL never changes between versions.
+        # SUPublicEDKey is the public half of the EdDSA key generated once with
+        # Sparkle's `generate_keys` (private key lives in the login keychain;
+        # back it up, it is required to sign every future update).
+        SUFeedURL: https://github.com/davidullo/magicwall/releases/latest/download/appcast.xml
+        SUPublicEDKey: CojlMizGL3KbVVVeyghTURg8Sd2gxgkcBFxvwN7j4iA=
+        SUEnableAutomaticChecks: true
+        SUScheduledCheckInterval: 86400
+        SUAutomaticallyUpdate: false
+        SUVerifyUpdateBeforeExtraction: true
+        SURequireSignedFeed: true
         CFBundleURLTypes:
           - CFBundleURLName: app.magicwall.deeplink
             CFBundleTypeRole: Editor
@@ -80,6 +96,12 @@ schemes:
       config: Debug
       targets:
         - MagicWallUITests
+      environmentVariables:
+        # Path of the seeded library prepared by Scripts/e2e.sh. The shell
+        # environment is not forwarded to the UI-test runner by xcodebuild,
+        # so the value lives in the scheme (and must stay in sync with the
+        # script). Without it the tests fall back to the real library.
+        MW_E2E_SEEDED_DATA_DIR: /tmp/mw-e2e-data/seeded
     run:
       config: Debug
     archive:

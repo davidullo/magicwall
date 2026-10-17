@@ -374,6 +374,7 @@ struct GeneralSettingsView: View {
 
 struct AboutSettingsView: View {
     @EnvironmentObject private var theme: ThemeStore
+    @EnvironmentObject private var updater: UpdaterController
 
     var body: some View {
         SettingsPage(title: L("settings.tab.about")) {
@@ -409,6 +410,42 @@ struct AboutSettingsView: View {
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 28)
                 .padding(.horizontal, 20)
+            }
+
+            updatesCard
+        }
+    }
+
+    /// Sparkle controls. Hidden for development builds: the updater is only
+    /// started for Developer ID-signed releases (see `UpdaterController`).
+    @ViewBuilder
+    private var updatesCard: some View {
+        if updater.isActive {
+            SettingsCard(title: L("settings.updates.title"), systemImage: "arrow.triangle.2.circlepath") {
+                SettingsToggleRow(
+                    title: L("settings.updates.automatic"),
+                    subtitle: L("settings.updates.hint"),
+                    isOn: Binding(
+                        get: { updater.automaticallyChecksForUpdates },
+                        set: { updater.setAutomaticallyChecksForUpdates($0) }
+                    )
+                )
+
+                SettingsDivider()
+
+                HStack {
+                    Spacer(minLength: 0)
+
+                    SettingsActionButton(
+                        title: L("update.check"),
+                        systemImage: "arrow.triangle.2.circlepath",
+                        isEnabled: updater.canCheckForUpdates
+                    ) {
+                        updater.checkForUpdates()
+                    }
+                    .accessibilityIdentifier("settings.about.checkUpdates")
+                }
+                .padding(.vertical, 7)
             }
         }
     }

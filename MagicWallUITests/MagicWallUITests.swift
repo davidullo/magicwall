@@ -8,10 +8,10 @@ import XCTest
 /// macOS notes:
 /// - `XCUIElement.click()` is used instead of `tap()`: on macOS `tap()` does
 ///   not reliably deliver a usable click to SwiftUI controls.
-/// - `Scripts/e2e.sh` seeds an isolated library in a temporary directory and
-///   passes it through `MW_E2E_SEEDED_DATA_DIR`; tests never touch the real
-///   user library when launched that way. Without that variable the tests fall
-///   back to the real library and skip video-dependent cases when it is empty.
+/// - `Scripts/e2e.sh` seeds an isolated library and points the scheme's
+///   `MW_E2E_SEEDED_DATA_DIR` at it; tests never touch the real user library
+///   when launched that way. Without a valid directory the tests fall back to
+///   the real library and skip video-dependent cases when it is empty.
 final class MagicWallUITests: XCTestCase {
     private var app: XCUIApplication!
     private var ownedDataDirectory: URL?
@@ -19,8 +19,14 @@ final class MagicWallUITests: XCTestCase {
 
     override func setUpWithError() throws {
         continueAfterFailure = false
+        // Scripts/e2e.sh prepares the seeded library and points the scheme's
+        // MW_E2E_SEEDED_DATA_DIR at it (the shell environment is not forwarded
+        // to the test runner). Without a valid directory the tests fall back
+        // to the real library and skip video-dependent cases when it is empty.
         let seeded = ProcessInfo.processInfo.environment["MW_E2E_SEEDED_DATA_DIR"]
-        launchApp(dataDirectory: seeded?.isEmpty == false ? seeded : nil)
+        let hasSeededLibrary = seeded?.isEmpty == false
+            && FileManager.default.fileExists(atPath: seeded ?? "")
+        launchApp(dataDirectory: hasSeededLibrary ? seeded : nil)
     }
 
     override func tearDownWithError() throws {
@@ -192,6 +198,40 @@ final class MagicWallUITests: XCTestCase {
         XCTAssertTrue(close.waitForExistence(timeout: 5), "Close button should exist")
         close.click()
         XCTAssertTrue(waitForDisappearance(of: overlay, timeout: 5), "Preview should close from its X button")
+    }
+
+    /// The rotation bar lives with the favorites: it appears when there is at
+    /// least one favorite, and the countdown caption follows the switch.
+    /// Enabling the rotation applies a seeded wallpaper for the duration of
+    /// the test (the app is terminated right after).
+    func testFavoritesRotationBarTogglesCountdown() throws {
+        sidebarItem("favorites").click()
+
+        let toggle = anyElement(matching: "favorites.rotation.toggle")
+        guard toggle.exists else {
+            throw XCTSkip("No favorites in the library — run via Scripts/e2e.sh or favorite a video with mwctl first")
+        }
+
+        XCTAssertFalse(
+            anyElement("favorites.rotation.caption").exists,
+            "The countdown caption should be hidden while the rotation is off"
+        )
+
+        toggle.click()
+
+        XCTAssertTrue(
+            anyElement("favorites.rotation.caption").waitForExistence(timeout: 5),
+            "Enabling the rotation should show the countdown caption"
+        )
+        XCTAssertTrue(anyElement("favorites.rotation.interval").exists, "The interval menu should be available")
+        XCTAssertTrue(anyElement("favorites.rotation.next").exists, "The next-now button should be available")
+
+        toggle.click()
+
+        XCTAssertTrue(
+            waitForDisappearance(of: anyElement("favorites.rotation.caption"), timeout: 5),
+            "Disabling the rotation should hide the countdown caption again"
+        )
     }
 
     /// Renames a video from the fullscreen preview and verifies the change is

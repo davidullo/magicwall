@@ -5,6 +5,8 @@
 //   mwctl list                           List library videos
 //   mwctl assign <screenKey|main> <id>   Assign a video to a display
 //   mwctl assign-latest main             Assign the most recent video to a display
+//   mwctl favorite <id>                  Mark a video as favorite
+//   mwctl favorite-latest                Mark the most recent video as favorite
 //   mwctl clear-assignments              Remove all screen assignments
 //   mwctl delete <videoID>               Delete a video (files + record)
 //   mwctl prune-missing                  Delete records whose files are gone
@@ -20,6 +22,8 @@ func usage() {
       mwctl list                           List library videos
       mwctl assign <screenKey|main> <id>   Assign a video to a display
       mwctl assign-latest main             Assign the most recent video to a display
+      mwctl favorite <id>                  Mark a video as favorite
+      mwctl favorite-latest                Mark the most recent video as favorite
       mwctl clear-assignments              Remove all screen assignments
       mwctl delete <videoID>               Delete a video (files + record)
       mwctl prune-missing                  Delete records whose files are gone
@@ -89,6 +93,28 @@ func run(_ args: [String]) async throws -> Int32 {    guard let command = args.f
         }
         try repository.setAssignment(ScreenAssignment(screenKey: resolveScreenKey(rest[0]), videoId: video.id))
         print("Assigned \(video.title) to \(resolveScreenKey(rest[0]))")
+        return 0
+
+    case "favorite":
+        guard rest.count == 1 else {
+            usage()
+            return 1
+        }
+        guard let video = try repository.video(id: rest[0]) else {
+            FileHandle.standardError.write("error: no video with id \(rest[0])\n".data(using: .utf8)!)
+            return 1
+        }
+        try repository.setFavorite(true, videoID: video.id)
+        print("Favorited \(video.title)")
+        return 0
+
+    case "favorite-latest":
+        guard let video = try repository.allVideos().first else {
+            FileHandle.standardError.write("error: library is empty\n".data(using: .utf8)!)
+            return 1
+        }
+        try repository.setFavorite(true, videoID: video.id)
+        print("Favorited \(video.title)")
         return 0
 
     case "clear-assignments":

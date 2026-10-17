@@ -12,10 +12,15 @@
 #   NOTARY_PROFILE=magicwall \
 #   ./Scripts/release.sh --notarize
 #
+# Developer ID builds also produce the Sparkle appcast (dist/appcast.xml),
+# which is attached to the GitHub release and read by installed apps via
+#   https://github.com/davidullo/magicwall/releases/latest/download/appcast.xml
+#
 # Output (dist/):
 #   MagicWall-<version>.dmg
 #   MagicWall-<version>.zip
 #   MagicWall-<version>.dSYM.zip   (when available)
+#   appcast.xml                    (Developer ID builds only)
 #   SHA256SUMS.txt
 #
 # The version comes from project.yml (MARKETING_VERSION/CURRENT_PROJECT_VERSION)
@@ -37,7 +42,14 @@ NOTARIZE=0
 VERSION="$(sed -n 's/^[[:space:]]*MARKETING_VERSION: "\(.*\)"$/\1/p' project.yml | head -1)"
 BUILD_NUMBER="$(sed -n 's/^[[:space:]]*CURRENT_PROJECT_VERSION: "\(.*\)"$/\1/p' project.yml | head -1)"
 SIGN_IDENTITY="${SIGN_IDENTITY:--}"
+DEVELOPMENT_TEAM="${DEVELOPMENT_TEAM:-}"
 NOTARY_PROFILE="${NOTARY_PROFILE:-}"
+
+# The team is needed so xcodebuild signs Sparkle's nested helpers with the
+# same identity; derive it from "Name (TEAMID)" when not passed explicitly.
+if [[ "$SIGN_IDENTITY" != "-" && -z "$DEVELOPMENT_TEAM" ]]; then
+    DEVELOPMENT_TEAM="$(sed -n 's/.*(\([A-Z0-9]\{10\}\))$/\1/p' <<<"$SIGN_IDENTITY" | head -1)"
+fi
 
 usage() {
     cat <<'EOF'
@@ -53,7 +65,13 @@ Developer ID + notarization (requires an Apple Developer account):
   NOTARY_PROFILE=magicwall \
   ./Scripts/release.sh --notarize
 
-Output: dist/MagicWall-<version>.dmg, .zip, SHA256SUMS.txt (+ .dSYM.zip).
+Developer ID builds also generate dist/appcast.xml for Sparkle auto-updates
+(EdDSA key from the login keychain; SPARKLE_ED_KEY_FILE to use a key file).
+--publish attaches it to the GitHub release, which serves the feed at
+https://github.com/davidullo/magicwall/releases/latest/download/appcast.xml
+
+Output: dist/MagicWall-<version>.dmg, .zip, SHA256SUMS.txt (+ .dSYM.zip,
+appcast.xml on Developer ID builds).
 EOF
     exit 0
 }
@@ -110,6 +128,18 @@ else
 fi
 ARCH_ARGS=(ONLY_ACTIVE_ARCH=NO ARCHS="$ARCHS_VALUE")
 
+# Sparkle embeds XPC services and helper executables inside the app; they must
+# all carry the same Developer ID signature as the app, otherwise update
+# installation and notarization fail. Passing the identity to xcodebuild signs
+# every nested component; the codesign calls below re-assert the outer app.
+SIGN_ARGS=()
+if [[ "$SIGN_IDENTITY" != "-" ]]; then
+    SIGN_ARGS=(CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="$SIGN_IDENTITY")
+    if [[ -n "$DEVELOPMENT_TEAM" ]]; then
+        SIGN_ARGS+=(DEVELOPMENT_TEAM="$DEVELOPMENT_TEAM")
+    fi
+fi
+
 echo "▸ Building Release…"
 xcodebuild \
     -project MagicWall.xcodeproj \
@@ -120,6 +150,7 @@ xcodebuild \
     MARKETING_VERSION="$VERSION" \
     CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
     ${ARCH_ARGS[@]+"${ARCH_ARGS[@]}"} \
+    ${SIGN_ARGS[@]+"${SIGN_ARGS[@]}"} \
     build
 
 APP="$BUILD_DIR/Build/Products/Release/$APP_NAME.app"
@@ -135,6 +166,38 @@ if [[ "$BUILT_VERSION" != "$VERSION" ]]; then
 fi
 
 echo "▸ Signing…"
+
+# Sparkle's binary distribution ships its helpers ad-hoc signed. Xcode
+# re-signs the framework and the app, but NOT the code nested inside the
+# framework (XPC services, Updater.app, Autoupdate): notarization would reject
+# them and the Installer could not run. Re-sign them first, from the innermost
+# code outwards, then the framework, then the app (never use --deep on the
+# whole app: it is deprecated and hides exactly this kind of problem).
+SPARKLE_FW="$APP/Contents/Frameworks/Sparkle.framework"
+if [[ "$SIGN_IDENTITY" != "-" && -d "$SPARKLE_FW" ]]; then
+    SPARKLE_B="$SPARKLE_FW/Versions/Current"
+
+    for component in \
+        "$SPARKLE_B/XPCServices/Installer.xpc" \
+        "$SPARKLE_B/XPCServices/Downloader.xpc" \
+        "$SPARKLE_B/Autoupdate" \
+        "$SPARKLE_B/Updater.app"
+    do
+        [[ -e "$component" ]] || continue
+        if [[ "$component" == *Downloader.xpc ]]; then
+            # Sparkle >= 2.6: the Downloader keeps its own entitlements.
+            codesign --force --options runtime --timestamp \
+                --preserve-metadata=entitlements \
+                --sign "$SIGN_IDENTITY" "$component"
+        else
+            codesign --force --options runtime --timestamp \
+                --sign "$SIGN_IDENTITY" "$component"
+        fi
+    done
+
+    codesign --force --options runtime --timestamp --sign "$SIGN_IDENTITY" "$SPARKLE_FW"
+fi
+
 codesign --force --options runtime --sign "$SIGN_IDENTITY" "$APP"
 codesign --verify --deep --strict --verbose=2 "$APP"
 
@@ -182,10 +245,68 @@ fi
     fi
 )
 
+# Sparkle appcast. Installed apps read it from
+#   https://github.com/davidullo/magicwall/releases/latest/download/appcast.xml
+# so it must be attached to every release. Only Developer ID builds can
+# install updates, so the feed is only produced for those. The archives
+# directory is persistent (build/ is gitignored): generate_appcast keeps one
+# item per version with the right download URL and signature.
+APPCAST=""
+if [[ "$SIGN_IDENTITY" != "-" ]]; then
+    SPARKLE_BIN="${SPARKLE_BIN:-}"
+    if [[ -z "$SPARKLE_BIN" ]]; then
+        for candidate in \
+            "$BUILD_DIR/SourcePackages/artifacts/sparkle/Sparkle/bin" \
+            "$HOME/Library/Developer/Xcode/DerivedData/"*/SourcePackages/artifacts/sparkle/Sparkle/bin
+        do
+            if [[ -x "$candidate/generate_appcast" ]]; then
+                SPARKLE_BIN="$candidate"
+                break
+            fi
+        done
+    fi
+
+    if [[ -x "${SPARKLE_BIN:-}/generate_appcast" ]]; then
+        UPDATES_DIR="$ROOT/build/updates"
+        mkdir -p "$UPDATES_DIR"
+        cp "$ZIP" "$UPDATES_DIR/"
+
+        echo "▸ Generating Sparkle appcast…"
+        # Deltas are disabled on purpose: the app is ~7 MB and delta files
+        # would also have to be uploaded next to the ZIP. The EdDSA private
+        # key is normally read from the login keychain (Sparkle's
+        # generate_keys); CI can pass a key file via SPARKLE_ED_KEY_FILE.
+        APPCAST_ARGS=(
+            --download-url-prefix "https://github.com/davidullo/magicwall/releases/download/v$VERSION/"
+            --link "https://magicwall.davide.fyi"
+            --full-release-notes-url "https://github.com/davidullo/magicwall/releases/tag/v$VERSION"
+            --maximum-deltas 0
+        )
+        if [[ -n "${SPARKLE_ED_KEY_FILE:-}" ]]; then
+            APPCAST_ARGS+=(--ed-key-file "$SPARKLE_ED_KEY_FILE")
+        fi
+
+        "$SPARKLE_BIN/generate_appcast" "${APPCAST_ARGS[@]}" "$UPDATES_DIR"
+        cp "$UPDATES_DIR/appcast.xml" "$DIST/appcast.xml"
+        APPCAST="$DIST/appcast.xml"
+    else
+        echo "⚠ Sparkle tools not found (set SPARKLE_BIN to the folder with" >&2
+        echo "  generate_appcast, usually .../SourcePackages/artifacts/sparkle/Sparkle/bin):" >&2
+        echo "  appcast.xml was not generated." >&2
+    fi
+else
+    echo "ℹ Ad-hoc signature: appcast.xml not generated (Sparkle updates require a Developer ID build)."
+fi
+
 echo
 echo "✓ Artifacts in dist/:"
 ls -lh "$DIST"
 echo
+
+if [[ -n "$APPCAST" ]]; then
+    echo "  Feed URL: https://github.com/davidullo/magicwall/releases/latest/download/appcast.xml"
+    echo
+fi
 
 if [[ "$SIGN_IDENTITY" == "-" ]]; then
     cat <<'EOF'
@@ -198,7 +319,13 @@ fi
 
 if [[ "$PUBLISH" -eq 1 ]]; then
     echo "▸ Publishing GitHub release v$VERSION…"
-    FILES=("$DMG" "$ZIP" "$DIST/SHA256SUMS.txt")
+    if [[ -z "$APPCAST" ]]; then
+        echo "Refusing to publish: the Sparkle appcast is missing, installed" >&2
+        echo "apps would lose the update feed. Build with a Developer ID." >&2
+        exit 1
+    fi
+
+    FILES=("$DMG" "$ZIP" "$DIST/SHA256SUMS.txt" "$APPCAST")
     if [[ -f "$DSYM" ]]; then
         FILES+=("$DSYM")
     fi

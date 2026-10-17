@@ -112,6 +112,9 @@ struct FavoritesView: View {
                     LazyVStack(alignment: .leading, spacing: 22) {
                         favoritesHeader
 
+                        FavoritesRotationBar()
+                            .padding(.horizontal, MagicWallLayout.gutter)
+
                         VideoGridView(
                             videos: videos,
                             membership: membership,

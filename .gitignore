@@ -9,6 +9,11 @@ xcuserdata/
 *.xcworkspace
 .build-*
 
+# Package resolution: rewritten by Xcode (which merges the app's pins into the
+# local package file) and by SwiftPM on every resolve/test, so it is generated
+# rather than committed. Version pinning lives in project.yml / Package.swift.
+Packages/MagicWallCore/Package.resolved
+
 # macOS
 .DS_Store
 

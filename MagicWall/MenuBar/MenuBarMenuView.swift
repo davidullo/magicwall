@@ -10,6 +10,7 @@ import SwiftUI
 struct MenuBarMenuView: View {
     @EnvironmentObject private var viewModel: LibraryViewModel
     @EnvironmentObject private var engine: WallpaperEngine
+    @EnvironmentObject private var updater: UpdaterController
 
     var body: some View {
         Button(L("menubar.open")) {
@@ -27,6 +28,7 @@ struct MenuBarMenuView: View {
         Divider()
 
         favoritesMenu
+        rotationMenu
 
         Button(L("menubar.nextRandom")) {
             viewModel.applyRandomToAllScreens()
@@ -45,6 +47,13 @@ struct MenuBarMenuView: View {
         }
 
         Divider()
+
+        if updater.isActive {
+            Button(L("update.check")) {
+                updater.checkForUpdates()
+            }
+            .disabled(!updater.canCheckForUpdates)
+        }
 
         Button(L("menubar.quit")) {
             NSApp.terminate(nil)
@@ -88,6 +97,39 @@ struct MenuBarMenuView: View {
     }
 
     // MARK: - Helpers
+
+    /// Rotation over the favorites: on/off, how often and "next now", so the
+    /// wallpaper can be controlled with the window closed.
+    @ViewBuilder
+    private var rotationMenu: some View {
+        Menu(L("menubar.rotation")) {
+            Toggle(L("menubar.rotation.enabled"), isOn: Binding(
+                get: { engine.rotationEnabled },
+                set: { engine.setRotationEnabled($0) }
+            ))
+
+            Divider()
+
+            ForEach(RotationInterval.allCases, id: \.self) { interval in
+                Button {
+                    engine.setRotationInterval(interval)
+                } label: {
+                    if interval == engine.rotationInterval {
+                        Label(rotationIntervalLabel(interval), systemImage: "checkmark")
+                    } else {
+                        Text(rotationIntervalLabel(interval))
+                    }
+                }
+            }
+
+            Divider()
+
+            Button(L("menubar.rotation.next")) {
+                engine.advanceRotationNow()
+            }
+            .disabled(viewModel.favoriteIDs.isEmpty)
+        }
+    }
 
     /// Up to ten favorite videos, alphabetically sorted, ready for the submenu.
     private var favoriteVideos: [Video] {

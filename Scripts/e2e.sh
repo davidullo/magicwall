@@ -26,8 +26,10 @@ while ! mkdir "$LOCK" 2>/dev/null; do sleep 1; done
 xcodegen generate >/dev/null
 rmdir "$LOCK"
 
-# Isolated E2E library (fresh on every run).
-E2E_DATA_ROOT="${TMPDIR:-/tmp}/mw-e2e-data"
+# Isolated E2E library (fresh on every run). Keep the path in sync with
+# MW_E2E_SEEDED_DATA_DIR in project.yml: the test runner cannot see the shell
+# environment, so the seeded directory is passed through the scheme.
+E2E_DATA_ROOT="/tmp/mw-e2e-data"
 SEEDED_DATA_DIR="$E2E_DATA_ROOT/seeded"
 rm -rf "$E2E_DATA_ROOT"
 mkdir -p "$SEEDED_DATA_DIR"
@@ -38,6 +40,7 @@ MWCTL_BIN_DIR="$(swift build --package-path Packages/MagicWallCore --show-bin-pa
 FIXTURE="$E2E_DATA_ROOT/test-pattern.mp4"
 swift DevTools/make-test-video.swift "$FIXTURE" >/dev/null
 MAGICWALL_DATA_DIR="$SEEDED_DATA_DIR" "$MWCTL_BIN_DIR/mwctl" import "$FIXTURE" >/dev/null
+MAGICWALL_DATA_DIR="$SEEDED_DATA_DIR" "$MWCTL_BIN_DIR/mwctl" favorite-latest >/dev/null
 export MW_E2E_SEEDED_DATA_DIR="$SEEDED_DATA_DIR"
 
 EXTRA_ARGS=("$@")

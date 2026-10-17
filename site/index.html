@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <title>MagicWall — Local video wallpapers for macOS</title>
-<meta name="description" content="Set a different video wallpaper on every display. Native, offline, no accounts, no telemetry. Requires macOS 15 or later; universal for Apple silicon and Intel.">
+<meta name="description" content="Set a different video wallpaper on every display. Native, local, no accounts, no telemetry. Requires macOS 15 or later; universal for Apple silicon and Intel.">
 <link rel="canonical" href="https://magicwall.davide.fyi/">
 <meta name="color-scheme" content="light">
 <meta name="theme-color" content="#fdfbfc">
@@ -15,13 +15,13 @@
 <meta property="og:url" content="https://magicwall.davide.fyi/">
 <meta property="og:site_name" content="MagicWall">
 <meta property="og:title" content="MagicWall — a different video wallpaper on every display">
-<meta property="og:description" content="Native macOS video wallpapers from your own library. Per-screen assignments, power-aware playback, menu bar control. Offline, MIT licensed, macOS 15+.">
+<meta property="og:description" content="Native macOS video wallpapers from your own library. Per-screen assignments, power-aware playback, menu bar control. Local-first, MIT licensed, macOS 15+.">
 <meta property="og:image" content="https://magicwall.davide.fyi/assets/icon/og.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="MagicWall — a different video wallpaper on every display">
-<meta name="twitter:description" content="Native macOS video wallpapers from your own library. Per-display assignments, power-aware playback, menu bar control. Offline, MIT licensed, macOS 15+.">
+<meta name="twitter:description" content="Native macOS video wallpapers from your own library. Per-display assignments, power-aware playback, menu bar control. Local-first, MIT licensed, macOS 15+.">
 <meta name="twitter:image" content="https://magicwall.davide.fyi/assets/icon/og.jpg">
 
 <link rel="icon" href="assets/icon/favicon-32.png" sizes="32x32" type="image/png">
@@ -117,8 +117,8 @@
 
                 <p class="mini-lede">
                   MagicWall plays videos from your own library as desktop wallpapers on
-                  macOS — one per screen, behind your icons. No accounts, no telemetry,
-                  and no network traffic.
+                  macOS — one per screen, behind your icons. No accounts, no telemetry:
+                  the only network request is the update check, which you can turn off.
                 </p>
 
                 <div class="mini-actions">
@@ -137,7 +137,7 @@
                 <ul class="mini-facts">
                   <li><b>~8 MB</b><span>signed DMG</span></li>
                   <li><b>macOS 15+</b><span>silicon &amp; Intel</span></li>
-                  <li><b>100% offline</b><span>no telemetry</span></li>
+                  <li><b>100% local</b><span>no telemetry</span></li>
                   <li><b>MIT licensed</b><span>open source</span></li>
                 </ul>
               </div>
@@ -186,7 +186,7 @@
         </details>
         <details name="faq" data-reveal>
           <summary>Does anything leave my Mac?</summary>
-          <p>No. MagicWall has no accounts, no telemetry and makes no network requests at all. Videos, posters and the SQLite database stay inside <code>~/Library/Application Support/MagicWall</code> on your machine.</p>
+          <p>No. MagicWall has no accounts and no telemetry. The only network request it makes is the daily update check against the official GitHub releases, and you can turn it off in Settings → About. Videos, posters and the SQLite database stay inside <code>~/Library/Application Support/MagicWall</code> on your machine.</p>
         </details>
         <details name="faq" data-reveal>
           <summary>Is it open source?</summary>
@@ -235,7 +235,7 @@
     <div class="footer-brand">
       <img class="footer-icon" src="assets/icon/icon-192.png" width="44" height="44" alt="" loading="lazy" decoding="async">
       <p class="footer-word">MagicWall</p>
-      <p class="small">Local video wallpapers for macOS. Native, lightweight and completely offline.</p>
+      <p class="small">Local video wallpapers for macOS. Native, lightweight and completely private.</p>
     </div>
 
     <nav class="footer-cols" aria-label="Footer">

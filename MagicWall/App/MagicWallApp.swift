@@ -9,6 +9,7 @@ struct MagicWallApp: App {
     @StateObject private var loginItemService = LoginItemService()
     @StateObject private var themeStore = ThemeStore()
     @StateObject private var localization = LocalizationManager.shared
+    @StateObject private var updater = UpdaterController()
 
     init() {
         let environment = AppEnvironment.bootstrap()
@@ -25,6 +26,7 @@ struct MagicWallApp: App {
                     .environmentObject(engine)
                     .environmentObject(themeStore)
                     .environmentObject(localization)
+                    .environmentObject(updater)
                     .id(localization.language)
                     .task {
                         engine.start()
@@ -36,6 +38,13 @@ struct MagicWallApp: App {
             }
         }
         .defaultSize(width: 1180, height: 780)
+        .commands {
+            CommandGroup(after: .appInfo) {
+                if updater.isActive {
+                    CheckForUpdatesMenuItem(updater: updater)
+                }
+            }
+        }
 
         MenuBarExtra {
             MenuBarMenuView()
@@ -43,6 +52,7 @@ struct MagicWallApp: App {
                 .environmentObject(engine)
                 .environmentObject(themeStore)
                 .environmentObject(localization)
+                .environmentObject(updater)
                 .id(localization.language)
         } label: {
             Label("MagicWall", systemImage: "sparkles.tv")
@@ -55,6 +65,7 @@ struct MagicWallApp: App {
                 .environmentObject(loginItemService)
                 .environmentObject(themeStore)
                 .environmentObject(localization)
+                .environmentObject(updater)
                 .id(localization.language)
         }
     }

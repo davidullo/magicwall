@@ -62,6 +62,18 @@
 "favorites.empty.title" = "No favorites yet";
 "favorites.empty.message" = "Tap the heart on a card to keep your best wallpapers here.";
 
+/* Favorites rotation */
+"rotation.title" = "Auto-rotate favorites";
+"rotation.nextChange" = "Next change in %@ · %d of %d shown";
+"rotation.noFavorites" = "Add favorites to start the rotation.";
+"rotation.interval.help" = "How often the wallpaper changes";
+"rotation.nextNow.help" = "Switch to the next favorite now";
+"rotation.interval.1" = "1 min";
+"rotation.interval.5" = "5 min";
+"rotation.interval.15" = "15 min";
+"rotation.interval.30" = "30 min";
+"rotation.interval.60" = "1 hour";
+
 /* Search */
 "search.results" = "Results for “%@”";
 "search.empty.title" = "No results";
@@ -177,6 +189,12 @@
 "settings.about.version" = "Version";
 "settings.about.blurb" = "MagicWall — local video wallpapers for macOS. No cloud service: your videos stay on your Mac.";
 
+/* Updates (Sparkle) */
+"update.check" = "Check for Updates…";
+"settings.updates.title" = "Updates";
+"settings.updates.automatic" = "Check for updates automatically";
+"settings.updates.hint" = "If enabled, MagicWall asks GitHub for the latest release once a day and tells you when an update is ready. No personal data is sent.";
+
 /* Engine pause reasons */
 "engine.reason.userPaused" = "Paused manually";
 "engine.reason.onBattery" = "On battery power";
@@ -194,6 +212,9 @@
 "menubar.status.none" = "%@: no wallpaper";
 "menubar.favorites.apply" = "Apply favorite";
 "menubar.favorites.empty" = "No favorites";
+"menubar.rotation" = "Rotate favorites";
+"menubar.rotation.enabled" = "Auto-rotate favorites";
+"menubar.rotation.next" = "Next favorite now";
 "menubar.nextRandom" = "Next random";
 "menubar.stop" = "Stop wallpaper";
 "menubar.quit" = "Quit";

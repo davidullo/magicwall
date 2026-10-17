@@ -48,6 +48,17 @@ final class WallpaperEngine: ObservableObject {
     /// Why playback is currently suspended (diagnostics / settings copy).
     @Published private(set) var pauseReasons: [PlaybackPolicy.Reason] = []
 
+    // MARK: Favorites rotation
+
+    /// True while the wallpaper rotates through the favorites automatically.
+    @Published private(set) var rotationEnabled = false
+    /// How often the rotation picks a new favorite.
+    @Published private(set) var rotationInterval: RotationInterval = .default
+    /// When the next automatic change is due; `nil` while the rotation is off.
+    @Published private(set) var nextRotationDate: Date?
+    /// Favorites already shown during the current rotation cycle.
+    @Published private(set) var rotationShownVideoIDs: Set<String> = []
+
     /// Fallback occlusion poll interval. Occlusion is normally event driven; the
     /// timer only covers the cases where the window server swallows the change.
     private static let occlusionPollInterval: TimeInterval = 3
@@ -57,6 +68,8 @@ final class WallpaperEngine: ObservableObject {
 
     private var notificationObservers: [NSObjectProtocol] = []
     private var occlusionTimer: Timer?
+    private var rotationTimer: Timer?
+    private var rotation = FavoritesRotation()
     private var powerSourceBox: PowerSourceCallbackBox?
     private var powerSourceRunLoopSource: CFRunLoopSource?
 
@@ -85,6 +98,7 @@ final class WallpaperEngine: ObservableObject {
         observeSystemEvents()
         refreshScreens()
         restoreAssignments()
+        restoreRotationPreferences()
         reapplyPlaybackPolicy()
     }
 
@@ -95,6 +109,8 @@ final class WallpaperEngine: ObservableObject {
         windowsByKey.removeAll()
         teardownObservers()
         invalidateOcclusionTimer()
+        invalidateRotationTimer()
+        nextRotationDate = nil
         isRunning = false
         statuses = []
         pauseReasons = []
@@ -104,6 +120,8 @@ final class WallpaperEngine: ObservableObject {
     /// closed, observers and timers removed. Safe to call more than once.
     func prepareForTermination() {
         invalidateOcclusionTimer()
+        invalidateRotationTimer()
+        nextRotationDate = nil
         for window in windowsByKey.values {
             window.prepareForTermination()
             window.close()
@@ -184,6 +202,39 @@ final class WallpaperEngine: ObservableObject {
 
         refreshStatuses()
         reapplyPlaybackPolicy()
+    }
+
+    // MARK: - Favorites rotation
+
+    /// Enables or disables the automatic rotation over the favorites. Turning
+    /// it on swaps the wallpaper straight away for quick feedback, then keeps
+    /// going every ``rotationInterval``.
+    func setRotationEnabled(_ enabled: Bool) {
+        guard enabled != rotationEnabled else { return }
+        rotationEnabled = enabled
+        if enabled, isRunning {
+            advanceRotation()
+        } else {
+            invalidateRotationTimer()
+            nextRotationDate = nil
+            persistRotationPreferences()
+        }
+    }
+
+    /// Changes how often the rotation swaps the wallpaper. The countdown
+    /// restarts from now; the cycle progress is kept.
+    func setRotationInterval(_ interval: RotationInterval) {
+        guard interval != rotationInterval else { return }
+        rotationInterval = interval
+        persistRotationPreferences()
+        if rotationEnabled { scheduleNextRotation() }
+    }
+
+    /// Applies the next favorite right away (the "next" controls). Works
+    /// whether or not the automatic rotation is on, so the cycle stays
+    /// consistent when it is.
+    func advanceRotationNow() {
+        advanceRotation()
     }
 
     // MARK: - Observations
@@ -385,6 +436,84 @@ final class WallpaperEngine: ObservableObject {
             window.reassertOnWake()
         }
         reapplyPlaybackPolicy()
+    }
+
+    // MARK: - Rotation internals
+
+    /// Applies the next favorite and arms the timer for the following change.
+    private func advanceRotation() {
+        guard isRunning else { return }
+
+        let favorites = (try? repository.favoriteVideos()) ?? []
+        let eligible = favorites
+            .filter { FileManager.default.fileExists(atPath: $0.filePath) }
+            .map(\.id)
+
+        if let picked = rotation.next(from: eligible, avoiding: currentWallpaperVideoID),
+           let video = favorites.first(where: { $0.id == picked }) {
+            applyToAllScreens(video)
+            try? repository.markPlayed(id: video.id)
+        }
+
+        rotationShownVideoIDs = rotation.shownVideoIDs
+        persistRotationPreferences()
+        scheduleNextRotation()
+    }
+
+    /// The video currently on screen (the same on every screen whenever it was
+    /// applied through the rotation).
+    private var currentWallpaperVideoID: String? {
+        windowsByKey.values.compactMap(\.videoID).first
+    }
+
+    private func scheduleNextRotation() {
+        invalidateRotationTimer()
+        guard rotationEnabled, isRunning else {
+            nextRotationDate = nil
+            return
+        }
+
+        let fireDate = Date().addingTimeInterval(rotationInterval.timeInterval)
+        nextRotationDate = fireDate
+
+        let timer = Timer(fire: fireDate, interval: 0, repeats: false) { [weak self] _ in
+            Task { @MainActor in
+                self?.advanceRotation()
+            }
+        }
+        timer.tolerance = 1
+        RunLoop.main.add(timer, forMode: .common)
+        rotationTimer = timer
+    }
+
+    private func invalidateRotationTimer() {
+        rotationTimer?.invalidate()
+        rotationTimer = nil
+    }
+
+    private func persistRotationPreferences() {
+        let preferences = RotationPreferences(
+            enabled: rotationEnabled,
+            interval: rotationInterval,
+            shownVideoIDs: rotation.shownVideoIDs
+        )
+        try? repository.setSetting(RotationPreferences.storageKey, value: preferences.encoded())
+    }
+
+    private func restoreRotationPreferences() {
+        guard
+            let raw = try? repository.setting(RotationPreferences.storageKey),
+            let preferences = RotationPreferences(encoded: raw)
+        else { return }
+
+        rotationEnabled = preferences.enabled
+        rotationInterval = preferences.interval
+        rotation = FavoritesRotation(shownVideoIDs: preferences.shownVideoIDs)
+        rotationShownVideoIDs = preferences.shownVideoIDs
+
+        // On launch the restored wallpaper stays; the first change happens one
+        // interval from now.
+        if rotationEnabled { scheduleNextRotation() }
     }
 
     // MARK: - Occlusion fallback timer

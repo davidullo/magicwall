@@ -50,6 +50,10 @@ public protocol LibraryRepository: AnyObject, Sendable {
     func setAssignment(_ assignment: ScreenAssignment) throws
     func clearAssignment(screenKey: String) throws
 
+    // App settings
+    func setting(_ key: String) throws -> String?
+    func setSetting(_ key: String, value: String?) throws
+
     // Stats
     func videoCount() throws -> Int
     func totalLibraryBytes() throws -> Int64
@@ -338,6 +342,31 @@ public final class GRDBLibraryRepository: LibraryRepository, @unchecked Sendable
     public func clearAssignment(screenKey: String) throws {
         try database.dbQueue.write { db in
             try db.execute(sql: "DELETE FROM screen_assignments WHERE screenKey = ?", arguments: [screenKey])
+        }
+    }
+
+    // MARK: App settings
+
+    public func setting(_ key: String) throws -> String? {
+        try database.dbQueue.read { db in
+            try String.fetchOne(
+                db,
+                sql: "SELECT value FROM app_settings WHERE key = ?",
+                arguments: [key]
+            )
+        }
+    }
+
+    public func setSetting(_ key: String, value: String?) throws {
+        try database.dbQueue.write { db in
+            if let value {
+                try db.execute(
+                    sql: "INSERT OR REPLACE INTO app_settings (key, value) VALUES (?, ?)",
+                    arguments: [key, value]
+                )
+            } else {
+                try db.execute(sql: "DELETE FROM app_settings WHERE key = ?", arguments: [key])
+            }
         }
     }
 

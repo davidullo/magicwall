@@ -62,6 +62,18 @@
 "favorites.empty.title" = "Ancora nessun preferito";
 "favorites.empty.message" = "Tocca il cuore su una card per tenere qui i tuoi wallpaper migliori.";
 
+/* Rotazione preferiti */
+"rotation.title" = "Rotazione automatica";
+"rotation.nextChange" = "Prossimo cambio tra %@ · %d di %d mostrati";
+"rotation.noFavorites" = "Aggiungi preferiti per avviare la rotazione.";
+"rotation.interval.help" = "Ogni quanto cambia il wallpaper";
+"rotation.nextNow.help" = "Passa subito al prossimo preferito";
+"rotation.interval.1" = "1 min";
+"rotation.interval.5" = "5 min";
+"rotation.interval.15" = "15 min";
+"rotation.interval.30" = "30 min";
+"rotation.interval.60" = "1 ora";
+
 /* Ricerca */
 "search.results" = "Risultati per “%@”";
 "search.empty.title" = "Nessun risultato";
@@ -177,6 +189,12 @@
 "settings.about.version" = "Versione";
 "settings.about.blurb" = "MagicWall — wallpaper video locali per macOS. Nessun servizio cloud: i tuoi video restano sul tuo Mac.";
 
+/* Aggiornamenti (Sparkle) */
+"update.check" = "Controlla aggiornamenti…";
+"settings.updates.title" = "Aggiornamenti";
+"settings.updates.automatic" = "Controlla automaticamente gli aggiornamenti";
+"settings.updates.hint" = "Se attivo, MagicWall chiede a GitHub una volta al giorno qual è l'ultima release e ti avvisa quando un aggiornamento è pronto. Nessun dato personale viene inviato.";
+
 /* Motivi di pausa dell'engine */
 "engine.reason.userPaused" = "In pausa manualmente";
 "engine.reason.onBattery" = "A batteria";
@@ -194,6 +212,9 @@
 "menubar.status.none" = "%@: nessun wallpaper";
 "menubar.favorites.apply" = "Applica preferito";
 "menubar.favorites.empty" = "Nessun preferito";
+"menubar.rotation" = "Ruota preferiti";
+"menubar.rotation.enabled" = "Rotazione automatica";
+"menubar.rotation.next" = "Prossimo preferito ora";
 "menubar.nextRandom" = "Prossimo casuale";
 "menubar.stop" = "Ferma wallpaper";
 "menubar.quit" = "Esci";
