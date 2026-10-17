@@ -113,8 +113,27 @@ cd Packages/MagicWallCore && swift test
 
 ## 📦 Release
 
-The version lives in `project.yml` (`MARKETING_VERSION` and
-`CURRENT_PROJECT_VERSION`). To produce the distributable artifacts:
+One command does the whole release — version bump, tests, commit + push,
+universal build, Developer ID signing, notarization, DMG/ZIP/dSYM, signed
+appcast, GitHub release and feed verification:
+
+```bash
+./Scripts/publish            # next patch: 0.2.0 → 0.2.1
+./Scripts/publish minor      # next feature release: 0.2.0 → 0.3.0
+./Scripts/publish major      # 0.2.0 → 1.0.0
+./Scripts/publish 1.2.3      # exact version
+./Scripts/publish --dry-run  # print the plan without touching anything
+```
+
+The signing identity is detected from the keychain, the notary profile
+defaults to `magicwall` (create it once with
+`xcrun notarytool store-credentials magicwall --apple-id ... --team-id ...`)
+and the build number is the current one plus one. Without `--yes` the release
+starts after a short countdown, so a wrong invocation can be aborted with
+Ctrl-C. Partial runs: `--skip-tests`, `--with-e2e`, `--no-publish`,
+`--no-push`, `--no-commit`, `--build N`.
+
+For a local build only (no git, no publishing):
 
 ```bash
 ./Scripts/release.sh            # universal build (arm64 + x86_64)
@@ -130,26 +149,9 @@ Artifacts are written to `dist/`:
 - `SHA256SUMS.txt`
 
 Local builds are ad-hoc signed: they run on this Mac, but other Macs will be
-blocked by Gatekeeper because they are not notarized. For a frictionless
-release you need an Apple Developer account:
-
-```bash
-SIGN_IDENTITY="Developer ID Application: Name (TEAMID)" \
-NOTARY_PROFILE=magicwall \
-./Scripts/release.sh --notarize
-```
-
-Create the `magicwall` profile once with
-`xcrun notarytool store-credentials magicwall --apple-id ... --team-id ...`.
-To publish the GitHub release (after configuring the remote and
-`gh auth login`):
-
-```bash
-./Scripts/release.sh --publish
-```
-
-The script never pushes the repository: it only creates the `v<version>`
-release with the artifacts attached.
+blocked by Gatekeeper because they are not notarized. Developer ID builds
+(`SIGN_IDENTITY="Developer ID Application: ..."`) are notarized automatically
+by the release script.
 
 ### Auto-updates (Sparkle)
 
@@ -160,7 +162,8 @@ before installing anything). The release script:
 1. builds with the Developer ID so `Sparkle.framework`, its XPC services and
    the app all carry the same signature;
 2. signs the ZIP with the EdDSA key and generates `dist/appcast.xml`;
-3. `--publish` attaches the appcast to the release, which serves the feed at:
+3. `./Scripts/publish` (or `release.sh --publish`) attaches the appcast to the
+   release, which serves the feed at:
 
    `https://github.com/davidullo/magicwall/releases/latest/download/appcast.xml`
 
@@ -180,12 +183,13 @@ Back up the private key: **without it you cannot sign future updates**.
 
 Rules for every release:
 
-- bump `CURRENT_PROJECT_VERSION` — Sparkle compares the build number;
+- `./Scripts/publish` handles the build number: Sparkle compares
+  `CURRENT_PROJECT_VERSION`, and the script always increments it;
 - publish a normal (non-prerelease) GitHub release so `releases/latest` keeps
-  resolving;
-- the first Sparkle-enabled version must be installed manually by existing
-  users (older builds have no updater); every version after that updates
-  itself.
+  resolving (the script does this and verifies the feed afterwards);
+- the first Sparkle-enabled version (0.2.0) must be installed manually by
+  existing users (older builds have no updater); every version after that
+  updates itself.
 
 Installed apps keep working with an out-of-date feed: Sparkle simply reports
 "up to date". To test an update locally, build two Developer ID versions and

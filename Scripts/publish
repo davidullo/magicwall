@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+#
+# Shortcut for Scripts/publish_release.sh — run it from the repository root:
+#
+#   ./Scripts/publish            # patch bump + full release
+#   ./Scripts/publish minor      # feature release
+#   ./Scripts/publish --dry-run  # show the plan only
+#
+exec "$(cd "$(dirname "$0")" && pwd)/publish_release.sh" "$@"

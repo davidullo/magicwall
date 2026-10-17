@@ -2,28 +2,32 @@
 #
 # One-command release for MagicWall.
 #
-#   ./Scripts/publish_release.sh 0.2.0
-#   ./Scripts/publish_release.sh 0.2.0 --build 3 --yes
-#   ./Scripts/publish_release.sh 0.3.0 --no-publish   # build + appcast only
+#   ./Scripts/publish                 # next patch  (0.2.0 → 0.2.1)
+#   ./Scripts/publish minor           # next minor  (0.2.0 → 0.3.0)
+#   ./Scripts/publish major           # next major  (0.2.0 → 1.0.0)
+#   ./Scripts/publish 1.2.3           # exact version
+#   ./Scripts/publish --dry-run       # show the plan without touching anything
+#
+# The signing identity is detected from the keychain, the notary profile
+# defaults to "magicwall", the build number is current + 1: no other input is
+# needed. Without --yes the release starts after a short countdown, so a wrong
+# invocation can be aborted with Ctrl-C.
 #
 # What it does, in order:
-#   1. validates the version and the environment (Developer ID, notary profile,
-#      gh auth) and shows everything that is about to be committed;
+#   1. resolves the version and validates the environment (Developer ID,
+#      notary profile, gh auth, release not already published);
 #   2. bumps MARKETING_VERSION / CURRENT_PROJECT_VERSION in project.yml;
 #   3. runs the MagicWallCore tests;
 #   4. commits all pending changes as "Release v<version>" and pushes;
-#   5. calls Scripts/release.sh --notarize [--publish] (build, Developer ID
-#      signing incl. Sparkle helpers, notarization, DMG/ZIP/dSYM, appcast);
-#   6. verifies the published feed (appcast.xml with the new build number and
-#      the EdDSA signature) and the release assets.
-#
-# Required environment:
-#   SIGN_IDENTITY="Developer ID Application: Name (TEAMID)"
-#   NOTARY_PROFILE=magicwall
+#   5. calls Scripts/release.sh --notarize [--publish] (universal build,
+#      Developer ID signing incl. Sparkle helpers, notarization, DMG/ZIP/dSYM,
+#      signed appcast);
+#   6. verifies the published feed (new build number + EdDSA signature).
 #
 # Options:
 #   --build N        explicit build number (default: current + 1)
-#   --yes            do not ask for confirmation
+#   --yes            start immediately, no countdown
+#   --dry-run        validate and print the plan, then stop
 #   --skip-tests     skip the core test suite
 #   --with-e2e       also run the XCUITest suite before building
 #   --no-publish     build, sign, notarize and generate the appcast, but do
@@ -32,6 +36,10 @@
 #   --no-push        commit locally but do not push
 #   --no-commit      do not touch git at all
 #
+# Environment (normally auto-detected):
+#   SIGN_IDENTITY    "Developer ID Application: Name (TEAMID)"
+#   NOTARY_PROFILE   notarytool keychain profile (default: magicwall)
+#
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -39,9 +47,10 @@ cd "$ROOT"
 
 export DEVELOPER_DIR="${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Developer}"
 
-VERSION=""
+VERSION_ARG=""
 BUILD_NUMBER=""
 ASSUME_YES=0
+DRY_RUN=0
 RUN_TESTS=1
 RUN_E2E=0
 PUBLISH=1
@@ -49,7 +58,7 @@ PUSH=1
 COMMIT=1
 
 usage() {
-    sed -n '2,40p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n '2,46p' "$0" | sed 's/^# \{0,1\}//'
     exit 0
 }
 
@@ -57,6 +66,7 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         --build) BUILD_NUMBER="$2"; shift 2 ;;
         --yes|-y) ASSUME_YES=1; shift ;;
+        --dry-run) DRY_RUN=1; shift ;;
         --skip-tests) RUN_TESTS=0; shift ;;
         --with-e2e) RUN_E2E=1; shift ;;
         --no-publish) PUBLISH=0; shift ;;
@@ -65,35 +75,52 @@ while [[ $# -gt 0 ]]; do
         -h|--help) usage ;;
         -*) echo "Unknown option: $1" >&2; usage ;;
         *)
-            if [[ -n "$VERSION" ]]; then
+            if [[ -n "$VERSION_ARG" ]]; then
                 echo "Only one version argument is allowed." >&2
                 exit 1
             fi
-            VERSION="$1"; shift ;;
+            VERSION_ARG="$1"; shift ;;
     esac
 done
 
-if [[ -z "$VERSION" ]]; then
-    echo "Usage: $0 <version> [--build N] [--yes] [--skip-tests] [--with-e2e]" >&2
-    echo "       [--no-publish] [--no-push] [--no-commit]" >&2
-    exit 1
-fi
-
-if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-    echo "Version must look like 0.2.0 (got: $VERSION)." >&2
-    exit 1
-fi
+# ------------------------------------------------------------ current state
 
 CURRENT_VERSION="$(sed -n 's/^[[:space:]]*MARKETING_VERSION: "\(.*\)"$/\1/p' project.yml | head -1)"
 CURRENT_BUILD="$(sed -n 's/^[[:space:]]*CURRENT_PROJECT_VERSION: "\(.*\)"$/\1/p' project.yml | head -1)"
 
-if [[ -z "$CURRENT_VERSION" || -z "$CURRENT_BUILD" ]]; then
-    echo "Could not read the current version from project.yml." >&2
+if [[ "$CURRENT_VERSION" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+    # BASH_REMATCH is clobbered by the next regex match: capture right away.
+    MAJOR="${BASH_REMATCH[1]}"
+    MINOR="${BASH_REMATCH[2]}"
+    PATCH="${BASH_REMATCH[3]}"
+else
+    echo "Unexpected MARKETING_VERSION in project.yml: $CURRENT_VERSION" >&2
     exit 1
 fi
 
+if [[ ! "$CURRENT_BUILD" =~ ^[0-9]+$ ]]; then
+    echo "Unexpected CURRENT_PROJECT_VERSION in project.yml: $CURRENT_BUILD" >&2
+    exit 1
+fi
+
+# -------------------------------------------------------------- next version
+
+VERSION_ARG="${VERSION_ARG:-patch}"
+
+case "$VERSION_ARG" in
+    patch)   VERSION="$MAJOR.$MINOR.$((PATCH + 1))" ;;
+    minor)   VERSION="$MAJOR.$((MINOR + 1)).0" ;;
+    major)   VERSION="$((MAJOR + 1)).0.0" ;;
+    *)
+        if [[ ! "$VERSION_ARG" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Version must be patch, minor, major or X.Y.Z (got: $VERSION_ARG)." >&2
+            exit 1
+        fi
+        VERSION="$VERSION_ARG" ;;
+esac
+
 if [[ "$VERSION" == "$CURRENT_VERSION" ]]; then
-    echo "project.yml is already at $VERSION: pass the next version." >&2
+    echo "project.yml is already at $VERSION." >&2
     exit 1
 fi
 
@@ -101,15 +128,26 @@ if [[ -z "$BUILD_NUMBER" ]]; then
     BUILD_NUMBER="$((CURRENT_BUILD + 1))"
 fi
 
-if [[ ! "$BUILD_NUMBER" =~ ^[0-9]+$ ]]; then
-    echo "Build number must be an integer (got: $BUILD_NUMBER)." >&2
+if [[ ! "$BUILD_NUMBER" =~ ^[0-9]+$ ]] || (( BUILD_NUMBER <= CURRENT_BUILD )); then
+    echo "Build number must be an integer greater than $CURRENT_BUILD (got: $BUILD_NUMBER)." >&2
     exit 1
 fi
 
-if (( BUILD_NUMBER <= CURRENT_BUILD )); then
-    echo "Build number must grow: current is $CURRENT_BUILD, got $BUILD_NUMBER." >&2
+# -------------------------------------------------------------- environment
+
+if [[ -z "${SIGN_IDENTITY:-}" || "${SIGN_IDENTITY}" == "-" ]]; then
+    SIGN_IDENTITY="$(security find-identity -v -p codesigning 2>/dev/null \
+        | sed -n 's/.*"\(Developer ID Application: [^"]*\)".*/\1/p' \
+        | head -1)"
+fi
+
+if [[ -z "${SIGN_IDENTITY:-}" ]]; then
+    echo 'No Developer ID Application identity found in the keychain.' >&2
+    echo 'Set SIGN_IDENTITY="Developer ID Application: Name (TEAMID)".' >&2
     exit 1
 fi
+
+NOTARY_PROFILE="${NOTARY_PROFILE:-magicwall}"
 
 if [[ "$PUBLISH" -eq 1 ]]; then
     for tool in gh curl; do
@@ -123,19 +161,14 @@ if [[ "$PUBLISH" -eq 1 ]]; then
         echo "Release v$VERSION already exists on GitHub." >&2
         exit 1
     fi
+    if ! xcrun notarytool history --keychain-profile "$NOTARY_PROFILE" >/dev/null 2>&1; then
+        echo "Notary profile '$NOTARY_PROFILE' not found in the keychain." >&2
+        echo "Create it with: xcrun notarytool store-credentials $NOTARY_PROFILE --apple-id ... --team-id ..." >&2
+        exit 1
+    fi
 fi
 
-if [[ -z "${SIGN_IDENTITY:-}" || "${SIGN_IDENTITY}" == "-" ]]; then
-    echo 'SIGN_IDENTITY is required, e.g. SIGN_IDENTITY="Developer ID Application: Name (TEAMID)".' >&2
-    exit 1
-fi
-
-if [[ -z "${NOTARY_PROFILE:-}" ]]; then
-    echo "NOTARY_PROFILE is required (a notarytool keychain profile)." >&2
-    exit 1
-fi
-
-# ---------------------------------------------------------------- dirty tree
+# ------------------------------------------------------------------- plan
 
 DIRTY=0
 if ! git diff --quiet || ! git diff --cached --quiet || [[ -n "$(git ls-files --others --exclude-standard)" ]]; then
@@ -158,9 +191,18 @@ if [[ "$DIRTY" -eq 1 ]]; then
     echo
 fi
 
+if [[ "$DRY_RUN" -eq 1 ]]; then
+    echo "  Dry run: nothing was changed."
+    exit 0
+fi
+
 if [[ "$ASSUME_YES" -ne 1 ]]; then
-    read -r -p "Proceed? [y/N] " answer
-    [[ "$answer" == "y" || "$answer" == "Y" ]] || { echo "Aborted."; exit 1; }
+    echo "  Starting in 8 seconds — press Ctrl-C to abort."
+    for i in 8 7 6 5 4 3 2 1; do
+        printf "\r  %d…" "$i"
+        sleep 1
+    done
+    printf "\r  Going.\n"
 fi
 
 # ------------------------------------------------------------------- bump
@@ -218,7 +260,7 @@ if [[ "$PUBLISH" -eq 1 ]]; then
     echo "▸ Verifying the published feed…"
 
     OK=0
-    for attempt in {1..10}; do
+    for attempt in 1 2 3 4 5 6 7 8 9 10; do
         if curl -fsSL "$FEED_URL" -o /tmp/magicwall-appcast.xml 2>/dev/null \
             && grep -q "<sparkle:version>$BUILD_NUMBER</sparkle:version>" /tmp/magicwall-appcast.xml \
             && grep -q "edSignature" /tmp/magicwall-appcast.xml
@@ -230,7 +272,7 @@ if [[ "$PUBLISH" -eq 1 ]]; then
     done
 
     if [[ "$OK" -ne 1 ]]; then
-        echo "⚠ The feed does not expose v$BUILD_NUMBER yet. Check the release assets:" >&2
+        echo "⚠ The feed does not expose build $BUILD_NUMBER yet. Check the assets:" >&2
         echo "  gh release view v$VERSION" >&2
         exit 1
     fi
@@ -247,9 +289,9 @@ if [[ "$PUBLISH" -eq 1 ]]; then
   update; you can force a check with "Check for Updates…" in the app menu.
   Installs older than the first Sparkle release must be updated manually once.
 
-  Local smoke test (two signed versions required):
-    fresh install this DMG in /Applications, then build the next version with
-    MW_UPDATE_FEED_URL pointing at a local appcast (see README → Auto-updates).
+  Next time:
+    ./Scripts/publish            # patch
+    ./Scripts/publish minor      # feature release
 EOF
 else
     echo
