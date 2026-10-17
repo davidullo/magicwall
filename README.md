@@ -10,10 +10,10 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/davidullo/magicwall/releases/latest"><img src="https://img.shields.io/github/v/release/davidullo/magicwall?label=release&style=flat-square" alt="Latest release"></a>
-  <img src="https://img.shields.io/badge/macOS-15%2B-blue?style=flat-square" alt="macOS 15+">
-  <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="MIT license">
-  <img src="https://img.shields.io/badge/SwiftUI-native-purple?style=flat-square" alt="SwiftUI">
+  <a href="https://github.com/davidullo/magicwall/releases/latest"><img src="https://img.shields.io/badge/Download-0A84FF?style=flat&logo=apple&logoColor=white" alt="Download"></a>
+  <img src="https://img.shields.io/badge/macOS-15%2B-5E5CE6?style=flat&labelColor=1c1c1e" alt="macOS 15 or later">
+  <img src="https://img.shields.io/badge/SwiftUI-FF9F0A?style=flat&logo=swift&logoColor=white&labelColor=1c1c1e" alt="SwiftUI">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-30D158?style=flat&labelColor=1c1c1e" alt="MIT license"></a>
 </p>
 
 ---
