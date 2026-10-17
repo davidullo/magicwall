@@ -318,7 +318,7 @@ EOF
 fi
 
 if [[ "$PUBLISH" -eq 1 ]]; then
-    echo "▸ Publishing GitHub release v$VERSION…"
+    echo "▸ Publishing GitHub release v${VERSION}…"
     if [[ -z "$APPCAST" ]]; then
         echo "Refusing to publish: the Sparkle appcast is missing, installed" >&2
         echo "apps would lose the update feed. Build with a Developer ID." >&2
