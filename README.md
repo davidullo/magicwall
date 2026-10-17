@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="MagicWall/Assets.xcassets/AppIcon.appiconset/icon_256x256.png" width="144" alt="Icona di MagicWall">
+  <img src="docs/icon.png" width="144" alt="Icona di MagicWall">
 </p>
 
 <h1 align="center">MagicWall</h1>
