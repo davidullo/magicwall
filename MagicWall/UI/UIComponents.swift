@@ -225,11 +225,13 @@ struct EmptyLibraryState: View {
             Text(L("empty.library.title"))
                 .font(.system(size: 22, weight: theme.active.titleFontWeight))
                 .foregroundStyle(theme.active.textPrimaryColor)
+                .accessibilityIdentifier("empty.library.title")
             Text(L("empty.library.message"))
                 .font(.callout)
                 .foregroundStyle(theme.active.textSecondaryColor)
                 .multilineTextAlignment(.center)
             PrimaryActionButton(title: L("common.importVideos"), systemImage: "plus", action: onImport)
+                .accessibilityIdentifier("empty.import")
                 .padding(.top, 4)
         }
         .frame(maxWidth: .infinity)
@@ -277,6 +279,7 @@ struct CategoryToggleItem: Identifiable {
 struct VideoMenuActions {
     var applyToAll: () -> Void = {}
     var applyToScreen: (String) -> Void = { _ in }
+    var rename: () -> Void = {}
     var toggleFavorite: () -> Void = {}
     var delete: () -> Void = {}
     var toggleCategory: (Int64) -> Void = { _ in }
@@ -333,6 +336,7 @@ struct VideoContextMenu: View {
         Divider()
         CategoriesMenu(items: categoryItems, actions: actions)
         Divider()
+        Button(L("video.rename"), action: actions.rename)
         Button(isFavorite ? L("card.favorite.remove") : L("card.favorite.add"), action: actions.toggleFavorite)
         Button(L("video.delete"), role: .destructive, action: actions.delete)
     }
@@ -346,6 +350,7 @@ enum VideoMenuFactory {
         viewModel: LibraryViewModel,
         engine: WallpaperEngine,
         onNewCategory: @escaping () -> Void,
+        onRename: @escaping (Video) -> Void,
         didMutate: @escaping () -> Void
     ) -> VideoMenuActions {
         VideoMenuActions(
@@ -353,6 +358,7 @@ enum VideoMenuFactory {
             applyToScreen: { key in
                 applyWallpaper(video, toScreenKey: key, viewModel: viewModel, engine: engine)
             },
+            rename: { onRename(video) },
             toggleFavorite: { viewModel.toggleFavorite(video) },
             delete: { viewModel.delete(video) },
             toggleCategory: { categoryID in

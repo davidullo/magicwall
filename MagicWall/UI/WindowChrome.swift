@@ -47,6 +47,9 @@ struct WindowChromeConfigurator: NSViewRepresentable {
 
     private func configure(_ window: NSWindow?) {
         guard let window else { return }
+        // Only the library window uses this chrome; registering it here keeps
+        // `MainWindow` in sync with whatever window SwiftUI created.
+        MainWindow.register(window)
         window.titleVisibility = .hidden
         window.titlebarAppearsTransparent = true
         window.styleMask.insert(.fullSizeContentView)

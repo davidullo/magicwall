@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// The "Theme" tab: the list of saved themes plus a live editor for the active
-/// one.
+/// The "Theme" tab: a compact theme picker, a live preview and collapsible
+/// groups of design tokens.
 ///
 /// Every edit goes through `themeStore.updateActive`, so the whole app updates
 /// as soon as a colour, the corner radius or the title weight changes. Editing a
@@ -11,27 +11,22 @@ struct ThemeEditorView: View {
 
     @State private var isShowingSaveAs = false
     @State private var newThemeName = ""
+    @State private var expandedGroups: Set<String> = ["Brand"]
 
     private var theme: ThemeConfiguration { themeStore.active }
 
-    private static let columns = [
-        GridItem(.flexible(), spacing: 18, alignment: .top),
-        GridItem(.flexible(), spacing: 18, alignment: .top)
-    ]
-
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 22) {
-                themesSection
-                colorsSection
-                shapeSection
-                previewSection
-                actionsSection
-            }
-            .padding(20)
-            .frame(maxWidth: .infinity, alignment: .leading)
+        SettingsPage(
+            title: L("settings.tab.theme"),
+            subtitle: L("settings.theme.subtitle"),
+            identifier: "theme.editor"
+        ) {
+            themePickerCard
+            previewSection
+            colorsSection
+            shapeSection
+            actionsSection
         }
-        .accessibilityIdentifier("theme.editor")
         .alert(L("theme.alert.saveAs.title"), isPresented: $isShowingSaveAs) {
             TextField(L("theme.alert.saveAs.nameField"), text: $newThemeName)
             Button(L("common.cancel"), role: .cancel) {}
@@ -41,110 +36,112 @@ struct ThemeEditorView: View {
         }
     }
 
-    // MARK: - Saved themes
+    // MARK: - Active theme
 
-    private var themesSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            sectionHeader(L("theme.section.saved"), systemImage: "square.stack.3d.up")
+    private var themePickerCard: some View {
+        SettingsCard {
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(L("theme.activeTheme"))
+                        .font(.system(size: 10.5, weight: .semibold))
+                        .foregroundStyle(themeStore.active.textTertiaryColor)
 
-            VStack(spacing: 6) {
-                ForEach(themeStore.themes) { item in
-                    themeRow(item)
+                    Picker(
+                        selection: Binding(
+                            get: { themeStore.activeThemeID },
+                            set: { id in
+                                guard let item = themeStore.themes.first(where: { $0.id == id }) else { return }
+                                themeStore.activate(item)
+                            }
+                        )
+                    ) {
+                        ForEach(themeStore.themes) { item in
+                            Text(item.name).tag(item.id)
+                        }
+                    } label: {
+                        Text(L("theme.activeTheme"))
+                    }
+                    .labelsHidden()
+                    .pickerStyle(.menu)
+                    .frame(width: 200, alignment: .leading)
+                    .accessibilityIdentifier("theme.picker")
                 }
+
+                if theme.isBuiltIn {
+                    pill(L("theme.pill.builtIn"), color: themeStore.active.textTertiaryColor)
+                }
+
+                Spacer(minLength: 8)
+
+                Menu {
+                    Button(L("theme.action.duplicate")) {
+                        themeStore.duplicate(theme)
+                    }
+
+                    Divider()
+
+                    Button(L("common.delete"), role: .destructive) {
+                        themeStore.delete(theme)
+                    }
+                    .disabled(theme.isBuiltIn)
+                } label: {
+                    Image(systemName: "ellipsis")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundStyle(themeStore.active.buttonSecondaryTextColor)
+                        .frame(width: 28, height: 28)
+                        .background(themeStore.active.buttonSecondaryBackgroundColor, in: Circle())
+                }
+                .menuStyle(.borderlessButton)
+                .menuIndicator(.hidden)
+                .fixedSize()
+                .help(L("theme.manage.help"))
+            }
+            .padding(.vertical, 7)
+
+            if theme.isBuiltIn {
+                SettingsDivider()
+
+                HStack(spacing: 6) {
+                    Image(systemName: "info.circle")
+                        .font(.system(size: 10.5, weight: .semibold))
+
+                    Text(L("theme.builtIn.fork"))
+                        .font(.system(size: 11))
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    Spacer(minLength: 0)
+                }
+                .foregroundStyle(themeStore.active.textSecondaryColor)
+                .padding(.vertical, 8)
             }
         }
     }
 
-    private func themeRow(_ item: ThemeConfiguration) -> some View {
-        let isActive = item.id == themeStore.activeThemeID
+    // MARK: - Preview
 
-        return HStack(spacing: 10) {
-            Circle()
-                .fill(item.accentColor)
-                .frame(width: 12, height: 12)
-                .overlay(Circle().strokeBorder(Color.primary.opacity(0.15), lineWidth: 1))
-                .help(L("theme.accent.help"))
-
-            Text(item.name)
-                .fontWeight(isActive ? .semibold : .regular)
-
-            if isActive {
-                pill(L("theme.pill.active"), color: .accentColor)
-            }
-            if item.isBuiltIn {
-                pill(L("theme.pill.builtIn"), color: .secondary)
-            }
-
-            Spacer(minLength: 12)
-
-            HStack(spacing: 6) {
-                Button(L("theme.action.activate")) { themeStore.activate(item) }
-                    .disabled(isActive)
-
-                Button(L("theme.action.duplicate")) { themeStore.duplicate(item) }
-
-                Button(L("common.delete")) { themeStore.delete(item) }
-                    .disabled(item.isBuiltIn)
-                    .help(item.isBuiltIn ? L("theme.builtIn.cannotDelete") : L("theme.delete.help"))
-            }
-            .buttonStyle(.bordered)
-            .controlSize(.small)
+    private var previewSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            SettingsSubheader(title: L("home.hero.preview"), systemImage: "eye")
+            ThemePreviewCard(theme: theme)
         }
-        .padding(.vertical, 7)
-        .padding(.horizontal, 12)
-        .background(
-            Color.primary.opacity(isActive ? 0.08 : 0.04),
-            in: RoundedRectangle(cornerRadius: 8, style: .continuous)
-        )
-    }
-
-    private func pill(_ title: String, color: Color) -> some View {
-        Text(title)
-            .font(.caption2.weight(.semibold))
-            .padding(.horizontal, 7)
-            .padding(.vertical, 2)
-            .background(color.opacity(0.18), in: Capsule())
-            .foregroundStyle(color)
     }
 
     // MARK: - Colours
 
     private var colorsSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack(alignment: .firstTextBaseline, spacing: 10) {
-                sectionHeader(L("theme.section.colors"), systemImage: "paintpalette")
-                Spacer(minLength: 8)
-                Text(theme.name)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-            }
-
-            if theme.isBuiltIn {
-                Label(
-                    L("theme.builtIn.fork"),
-                    systemImage: "info.circle"
-                )
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            }
+        VStack(alignment: .leading, spacing: 10) {
+            SettingsSubheader(title: L("theme.section.colors"), systemImage: "paintpalette")
 
             ForEach(ThemeTokenGroup.all) { group in
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(groupTitle(group))
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-
-                    LazyVGrid(columns: Self.columns, spacing: 10) {
-                        ForEach(group.tokens) { token in
-                            ThemeColorRow(
-                                token: token,
-                                hex: theme[keyPath: token.keyPath],
-                                color: colorBinding(for: token)
-                            )
-                        }
+                ThemeTokenGroupCard(
+                    group: group,
+                    title: groupTitle(group),
+                    theme: theme,
+                    isExpanded: expandedBinding(for: group.id),
+                    bindingFor: { token in
+                        colorBinding(for: token)
                     }
-                }
+                )
             }
         }
     }
@@ -163,41 +160,60 @@ struct ThemeEditorView: View {
         )
     }
 
+    private func expandedBinding(for id: String) -> Binding<Bool> {
+        Binding(
+            get: { expandedGroups.contains(id) },
+            set: { isExpanded in
+                if isExpanded {
+                    expandedGroups.insert(id)
+                } else {
+                    expandedGroups.remove(id)
+                }
+            }
+        )
+    }
+
     // MARK: - Shape & typography
 
     private var shapeSection: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            sectionHeader(L("theme.section.shape"), systemImage: "square.on.circle")
-
-            HStack(spacing: 12) {
-                Text(L("theme.cornerRadius"))
-                Slider(
-                    value: Binding(
-                        get: { theme.cornerRadius },
-                        set: { newValue in
-                            themeStore.updateActive { configuration in
-                                configuration.cornerRadius = newValue
+        SettingsCard(title: L("theme.section.shape"), systemImage: "square.on.circle") {
+            SettingsRow(L("theme.cornerRadius")) {
+                HStack(spacing: 10) {
+                    Slider(
+                        value: Binding(
+                            get: { theme.cornerRadius },
+                            set: { newValue in
+                                themeStore.updateActive { configuration in
+                                    configuration.cornerRadius = newValue
+                                }
                             }
-                        }
-                    ),
-                    in: 4...28,
-                    step: 1
-                )
-                Text("\(Int(theme.cornerRadius.rounded())) pt")
-                    .font(.callout.monospacedDigit())
-                    .foregroundStyle(.secondary)
-                    .frame(width: 46, alignment: .trailing)
+                        ),
+                        in: 4...28,
+                        step: 1
+                    )
+                    .tint(themeStore.active.accentColor)
+                    .frame(width: 150)
+
+                    Text("\(Int(theme.cornerRadius.rounded())) pt")
+                        .font(.system(size: 11, weight: .medium, design: .monospaced))
+                        .foregroundStyle(themeStore.active.textSecondaryColor)
+                        .frame(width: 38, alignment: .trailing)
+                }
             }
 
-            LabeledContent {
-                Picker(selection: Binding(
-                    get: { theme.titleWeight },
-                    set: { newValue in
-                        themeStore.updateActive { configuration in
-                            configuration.titleWeight = newValue
+            SettingsDivider()
+
+            SettingsRow(L("theme.titleWeight")) {
+                Picker(
+                    selection: Binding(
+                        get: { theme.titleWeight },
+                        set: { newValue in
+                            themeStore.updateActive { configuration in
+                                configuration.titleWeight = newValue
+                            }
                         }
-                    }
-                )) {
+                    )
+                ) {
                     ForEach(ThemeConfiguration.titleWeightOptions, id: \.self) { option in
                         Text(L("theme.titleWeight.\(option)")).tag(option)
                     }
@@ -206,28 +222,23 @@ struct ThemeEditorView: View {
                 }
                 .labelsHidden()
                 .pickerStyle(.menu)
-            } label: {
-                Text(L("theme.titleWeight"))
+                .frame(width: 145)
             }
 
-            Toggle(L("theme.useGradients"), isOn: Binding(
-                get: { theme.useGradients },
-                set: { newValue in
-                    themeStore.updateActive { configuration in
-                        configuration.useGradients = newValue
+            SettingsDivider()
+
+            SettingsToggleRow(
+                title: L("theme.useGradients"),
+                isOn: Binding(
+                    get: { theme.useGradients },
+                    set: { newValue in
+                        themeStore.updateActive { configuration in
+                            configuration.useGradients = newValue
+                        }
                     }
-                }
-            ))
+                )
+            )
             .help(L("theme.useGradients.help"))
-        }
-    }
-
-    // MARK: - Preview
-
-    private var previewSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            sectionHeader(L("home.hero.preview"), systemImage: "eye")
-            ThemePreviewCard(theme: theme)
         }
     }
 
@@ -235,23 +246,34 @@ struct ThemeEditorView: View {
 
     private var actionsSection: some View {
         HStack(spacing: 10) {
-            Button(L("theme.saveAs")) {
+            SettingsActionButton(
+                title: L("theme.saveAs"),
+                systemImage: "square.and.arrow.down",
+                kind: .primary
+            ) {
                 newThemeName = "\(theme.name) Custom"
                 isShowingSaveAs = true
             }
 
-            Button(L("theme.resetToDefault")) {
+            SettingsActionButton(
+                title: L("theme.resetToDefault"),
+                systemImage: "arrow.counterclockwise"
+            ) {
                 themeStore.resetToDefault()
             }
 
             Spacer(minLength: 12)
 
-            Button(L("theme.revert")) {
+            SettingsActionButton(
+                title: L("theme.revert"),
+                systemImage: "arrow.uturn.backward"
+            ) {
                 // Re-activating the saved theme drops any unsaved live edit.
                 themeStore.activate(theme)
             }
             .help(L("theme.revert.help"))
         }
+        .padding(.top, 2)
     }
 
     // MARK: - Helpers
@@ -274,8 +296,12 @@ struct ThemeEditorView: View {
         themeStore.save(ThemeConfiguration.makeNew(named: name, basedOn: theme))
     }
 
-    private func sectionHeader(_ title: String, systemImage: String) -> some View {
-        Label(title, systemImage: systemImage)
-            .font(.headline)
+    private func pill(_ title: String, color: Color) -> some View {
+        Text(title)
+            .font(.system(size: 9.5, weight: .semibold))
+            .padding(.horizontal, 7)
+            .padding(.vertical, 2)
+            .background(color.opacity(0.16), in: Capsule())
+            .foregroundStyle(color)
     }
 }

@@ -1,6 +1,8 @@
 # Xcode / build artifacts
 .build/
 DerivedData/
+build/
+dist/
 *.xcodeproj
 !project.yml
 xcuserdata/
@@ -9,6 +11,9 @@ xcuserdata/
 
 # macOS
 .DS_Store
+
+# Local agent configuration
+.opencode/
 
 # Dev fixtures (generated test media)
 DevFixtures/

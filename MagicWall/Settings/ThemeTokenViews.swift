@@ -111,6 +111,8 @@ struct ThemeColorRow: View {
     let hex: String
     @Binding var color: Color
 
+    @EnvironmentObject private var theme: ThemeStore
+
     var body: some View {
         HStack(spacing: 8) {
             ColorPicker(token.title, selection: $color, supportsOpacity: true)
@@ -119,17 +121,90 @@ struct ThemeColorRow: View {
 
             VStack(alignment: .leading, spacing: 1) {
                 Text(token.title)
-                    .font(.callout)
+                    .font(.system(size: 11.5, weight: .medium))
+                    .foregroundStyle(theme.active.textPrimaryColor)
                     .lineLimit(1)
                 Text(hex.uppercased())
-                    .font(.caption2.monospaced())
-                    .foregroundStyle(.secondary)
+                    .font(.system(size: 9.5, design: .monospaced))
+                    .foregroundStyle(theme.active.textTertiaryColor)
                     .lineLimit(1)
             }
 
             Spacer(minLength: 0)
         }
+        .padding(.vertical, 4)
         .help(token.help)
+    }
+}
+
+/// Collapsible card for one group of theme tokens. Keeping the groups closed
+/// by default turns the editor from a 17-row wall into a short, scannable list.
+struct ThemeTokenGroupCard: View {
+    let group: ThemeTokenGroup
+    let title: String
+    let theme: ThemeConfiguration
+    @Binding var isExpanded: Bool
+    let bindingFor: (ThemeColorToken) -> Binding<Color>
+
+    @EnvironmentObject private var themeStore: ThemeStore
+
+    private static let columns = [
+        GridItem(.flexible(), spacing: 18, alignment: .top),
+        GridItem(.flexible(), spacing: 18, alignment: .top)
+    ]
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.16)) {
+                    isExpanded.toggle()
+                }
+            } label: {
+                HStack(spacing: 8) {
+                    Text(title)
+                        .font(.system(size: 12.5, weight: .semibold))
+                        .foregroundStyle(themeStore.active.textPrimaryColor)
+
+                    Spacer(minLength: 0)
+
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundStyle(themeStore.active.textTertiaryColor)
+                        .rotationEffect(.degrees(isExpanded ? 0 : -90))
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 11)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("theme.group.\(group.id)")
+
+            if isExpanded {
+                SettingsDivider()
+
+                LazyVGrid(columns: Self.columns, spacing: 8) {
+                    ForEach(group.tokens) { token in
+                        ThemeColorRow(
+                            token: token,
+                            hex: theme[keyPath: token.keyPath],
+                            color: bindingFor(token)
+                        )
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 7)
+                .padding(.bottom, 11)
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+        .background(
+            themeStore.active.surfaceColor,
+            in: RoundedRectangle(cornerRadius: themeStore.active.cornerRadiusValue, style: .continuous)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: themeStore.active.cornerRadiusValue, style: .continuous)
+                .strokeBorder(themeStore.active.dividerColor, lineWidth: 1)
+        )
     }
 }
 

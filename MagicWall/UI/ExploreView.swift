@@ -7,40 +7,55 @@ struct ExploreView: View {
     let membership: [String: Set<Int64>]
     let onOpen: (Video) -> Void
     let onNewCategory: () -> Void
+    let onRename: (Video) -> Void
 
     @EnvironmentObject private var viewModel: LibraryViewModel
     @Environment(\.libraryDidMutate) private var libraryDidMutate
     @State private var selectedCategoryID: Int64?
 
     var body: some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: 22) {
-                header
-                chips
-                    .accessibilityIdentifier("explore.chips")
+        Group {
+            if viewModel.videos.isEmpty {
+                VStack(alignment: .leading, spacing: 22) {
+                    header
+                    chips
+                        .accessibilityIdentifier("explore.chips")
 
-                if viewModel.videos.isEmpty {
                     EmptyLibraryState(onImport: { viewModel.presentImportPanel() })
-                } else if filteredVideos.isEmpty {
-                    MessageState(
-                        icon: "tray",
-                        title: L("explore.empty.title"),
-                        message: L("explore.empty.message")
-                    )
-                } else {
-                    VideoGridView(
-                        videos: filteredVideos,
-                        membership: membership,
-                        onOpen: onOpen,
-                        onNewCategory: onNewCategory
-                    )
-                    .padding(.horizontal, MagicWallLayout.gutter)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
+                .padding(.top, MagicWallLayout.contentTopInset)
+                .padding(.bottom, 48)
+            } else {
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 22) {
+                        header
+                        chips
+                            .accessibilityIdentifier("explore.chips")
+
+                        if filteredVideos.isEmpty {
+                            MessageState(
+                                icon: "tray",
+                                title: L("explore.empty.title"),
+                                message: L("explore.empty.message")
+                            )
+                        } else {
+                            VideoGridView(
+                                videos: filteredVideos,
+                                membership: membership,
+                                onOpen: onOpen,
+                                onNewCategory: onNewCategory,
+                                onRename: onRename
+                            )
+                            .padding(.horizontal, MagicWallLayout.gutter)
+                        }
+                    }
+                    .padding(.top, MagicWallLayout.contentTopInset)
+                    .padding(.bottom, 48)
+                }
+                .scrollIndicators(.hidden)
             }
-            .padding(.top, MagicWallLayout.contentTopInset)
-            .padding(.bottom, 48)
         }
-        .scrollIndicators(.hidden)
         .onChange(of: viewModel.categories) { _, _ in
             if let id = selectedCategoryID, !viewModel.categories.contains(where: { $0.id == id }) {
                 selectedCategoryID = nil

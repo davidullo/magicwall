@@ -137,6 +137,28 @@ final class LibraryViewModel: ObservableObject {
         }
     }
 
+    /// Renames a video and returns the refreshed record, or `nil` when the
+    /// title is invalid or the write fails. Cards and the preview use the
+    /// returned value so an open preview updates in place.
+    @discardableResult
+    func rename(_ video: Video, to title: String) -> Video? {
+        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            lastError = L("video.rename.empty")
+            return nil
+        }
+
+        do {
+            try repository.renameVideo(id: video.id, title: trimmed)
+            refresh()
+            statusMessage = L("video.status.renamed", trimmed)
+            return try repository.video(id: video.id)
+        } catch {
+            lastError = L("video.error.rename", error.localizedDescription)
+            return nil
+        }
+    }
+
     func delete(_ video: Video) {
         engine.stopDisplaying(videoID: video.id)
         do {

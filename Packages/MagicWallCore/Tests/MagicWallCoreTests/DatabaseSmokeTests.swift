@@ -23,4 +23,32 @@ final class DatabaseSmokeTests: XCTestCase {
         XCTAssertEqual(loaded?.title, "Test")
         XCTAssertEqual(try repository.videoCount(), 1)
     }
+
+    func testRenameVideoPersistsTrimmedTitle() throws {
+        let database = try AppDatabase.inMemory()
+        let repository = GRDBLibraryRepository(database: database)
+
+        let video = Video(title: "Original", filePath: "/tmp/test.mp4")
+        try repository.save(video)
+
+        try repository.renameVideo(id: video.id, title: "  New title  ")
+
+        let loaded = try repository.video(id: video.id)
+        XCTAssertEqual(loaded?.title, "New title")
+    }
+
+    func testRenameVideoRejectsEmptyTitle() throws {
+        let database = try AppDatabase.inMemory()
+        let repository = GRDBLibraryRepository(database: database)
+
+        let video = Video(title: "Original", filePath: "/tmp/test.mp4")
+        try repository.save(video)
+
+        XCTAssertThrowsError(try repository.renameVideo(id: video.id, title: "   ")) { error in
+            guard case LibraryError.invalidInput = error else {
+                return XCTFail("Expected invalidInput, got \(error)")
+            }
+        }
+        XCTAssertEqual(try repository.video(id: video.id)?.title, "Original")
+    }
 }

@@ -107,6 +107,23 @@ extension ThemeConfiguration {
 
     var cornerRadiusValue: CGFloat { CGFloat(cornerRadius) }
 
+    /// Whether the window background is dark enough for dark system chrome.
+    /// Used by the main window and Settings so a custom light theme stays
+    /// coherent instead of always forcing dark controls.
+    var isDarkAppearance: Bool {
+        guard let color = NSColor(themeHex: windowBackground)?.usingColorSpace(.sRGB) else {
+            return true
+        }
+        let luminance = 0.2126 * color.redComponent
+            + 0.7152 * color.greenComponent
+            + 0.0722 * color.blueComponent
+        return luminance < 0.5
+    }
+
+    var preferredColorScheme: ColorScheme {
+        isDarkAppearance ? .dark : .light
+    }
+
     var titleFontWeight: Font.Weight {
         switch titleWeight {
         case "regular": return .regular

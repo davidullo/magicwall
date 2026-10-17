@@ -7,6 +7,7 @@ struct VideoGridView: View {
     let membership: [String: Set<Int64>]
     let onOpen: (Video) -> Void
     let onNewCategory: () -> Void
+    let onRename: (Video) -> Void
     var minimumWidth: CGFloat = 232
     var maximumWidth: CGFloat = 300
 
@@ -52,6 +53,7 @@ struct VideoGridView: View {
                 viewModel: viewModel,
                 engine: engine,
                 onNewCategory: onNewCategory,
+                onRename: onRename,
                 didMutate: libraryDidMutate
             )
         )

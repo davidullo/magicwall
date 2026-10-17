@@ -9,6 +9,7 @@ struct VideoShelf: View {
     let membership: [String: Set<Int64>]
     let onOpen: (Video) -> Void
     let onNewCategory: () -> Void
+    let onRename: (Video) -> Void
 
     @EnvironmentObject private var viewModel: LibraryViewModel
     @EnvironmentObject private var engine: WallpaperEngine
@@ -58,6 +59,7 @@ struct VideoShelf: View {
                 viewModel: viewModel,
                 engine: engine,
                 onNewCategory: onNewCategory,
+                onRename: onRename,
                 didMutate: libraryDidMutate
             )
         )

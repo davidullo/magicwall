@@ -81,6 +81,13 @@
 "video.play" = "Riproduci come wallpaper";
 "video.applyToScreen" = "Applica allo schermo";
 "video.applyToAllScreens" = "Applica a tutti gli schermi";
+"video.rename" = "Rinomina…";
+"video.rename.title" = "Rinomina video";
+"video.rename.field" = "Titolo";
+"video.rename.message" = "Scegli un nuovo titolo per questo wallpaper.";
+"video.rename.empty" = "Il titolo non può essere vuoto.";
+"video.status.renamed" = "Rinominato in “%@”.";
+"video.error.rename" = "Impossibile rinominare il video: %@";
 "video.delete" = "Elimina video";
 "video.screenAlreadyActive" = "%@ — già attivo";
 "video.status.playingAll" = "“%@” è ora in riproduzione su tutti gli schermi.";
@@ -102,6 +109,7 @@
 /* Anteprima a schermo intero */
 "preview.close.help" = "Chiudi (Esc)";
 "preview.manageCategories.help" = "Gestisci categorie";
+"preview.rename.help" = "Rinomina video";
 "preview.delete.help" = "Elimina dalla libreria";
 
 /* Importazione */
@@ -118,19 +126,26 @@
 "library.error" = "Errore libreria: %@";
 
 /* Impostazioni — schede */
+"settings.title" = "Impostazioni";
 "settings.tab.general" = "Generali";
 "settings.tab.theme" = "Tema";
 "settings.tab.about" = "Informazioni";
+"settings.general.subtitle" = "Riproduzione, comportamento dell'app e libreria.";
+"settings.theme.subtitle" = "Scegli un tema e regola ogni token visivo.";
 
 /* Impostazioni — riproduzione */
 "settings.playback.title" = "Riproduzione";
 "settings.playback.pauseWallpaper" = "Pausa wallpaper";
+"settings.playback.automatic" = "Pausa automatica";
 "settings.playback.pauseOnBattery" = "Pausa su batteria";
 "settings.playback.pauseOccluded" = "Pausa con desktop nascosto";
 "settings.playback.pauseLowPower" = "Pausa in Risparmio energetico";
 "settings.playback.pauseLocked" = "Pausa con schermo bloccato";
 "settings.playback.pauseThermal" = "Pausa sotto pressione termica";
 "settings.playback.paused" = "In pausa: %@";
+
+/* Impostazioni — applicazione */
+"settings.application.title" = "Applicazione";
 
 /* Impostazioni — avvio */
 "settings.startup.title" = "Avvio";
@@ -155,6 +170,8 @@
 
 /* Impostazioni — manutenzione */
 "settings.maintenance.title" = "Manutenzione";
+"settings.maintenance.activeWallpapers" = "Wallpaper attivi";
+"settings.maintenance.hint" = "Rimuove il wallpaper da ogni schermo.";
 
 /* Impostazioni — informazioni */
 "settings.about.version" = "Versione";
@@ -183,6 +200,8 @@
 
 /* Editor dei temi — temi salvati */
 "theme.section.saved" = "Temi salvati";
+"theme.activeTheme" = "Tema attivo";
+"theme.manage.help" = "Gestisci temi";
 "theme.accent.help" = "Colore accento di questo tema";
 "theme.pill.active" = "Attivo";
 "theme.pill.builtIn" = "Integrato";

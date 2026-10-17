@@ -106,16 +106,9 @@ struct MenuBarMenuView: View {
         return L("menubar.status.none", status.name)
     }
 
-    /// Brings the library window to the front, activating the app first.
-    ///
-    /// Prefers the main window (the one with a toolbar) over auxiliary windows
-    /// such as the Settings panel, then falls back to the first titled window.
+    /// Brings the library window to the front, recreating it when the user
+    /// closed it (the app keeps running so the wallpaper never stops).
     private func openMainWindow() {
-        NSApp.activate(ignoringOtherApps: true)
-
-        let titled = NSApp.windows.filter { $0.styleMask.contains(.titled) }
-        let target = titled.first(where: { $0.toolbar != nil }) ?? titled.first
-        target?.deminiaturize(nil)
-        target?.makeKeyAndOrderFront(nil)
+        MainWindow.present()
     }
 }

@@ -1,31 +1,33 @@
+import AppKit
 import XCTest
 
 /// End-to-end UI tests. They drive the real app: sidebar navigation, the
 /// fullscreen preview (including the regression where the preview must cover
-/// the sidebar), and the Settings window with its Theme editor.
+/// the sidebar), video renaming, the empty-library experience, and Settings.
 ///
 /// macOS notes:
 /// - `XCUIElement.click()` is used instead of `tap()`: on macOS `tap()` does
 ///   not reliably deliver a usable click to SwiftUI controls.
-/// - The tests assume the library has at least one video (development fixtures
-///   are imported with `mwctl import`). If the library is empty, the preview
-///   tests are skipped instead of failing.
+/// - `Scripts/e2e.sh` seeds an isolated library in a temporary directory and
+///   passes it through `MW_E2E_SEEDED_DATA_DIR`; tests never touch the real
+///   user library when launched that way. Without that variable the tests fall
+///   back to the real library and skip video-dependent cases when it is empty.
 final class MagicWallUITests: XCTestCase {
     private var app: XCUIApplication!
+    private var ownedDataDirectory: URL?
+    private var currentDataDirectory: String?
 
     override func setUpWithError() throws {
         continueAfterFailure = false
-        app = XCUIApplication()
-        // Force English so label-based assertions are deterministic.
-        app.launchArguments += ["-appLanguage", "en"]
-        app.launch()
-        app.activate()
-        XCTAssertTrue(app.windows.firstMatch.waitForExistence(timeout: 20), "Main window should appear")
-        app.windows.firstMatch.click()
+        let seeded = ProcessInfo.processInfo.environment["MW_E2E_SEEDED_DATA_DIR"]
+        launchApp(dataDirectory: seeded?.isEmpty == false ? seeded : nil)
     }
 
     override func tearDownWithError() throws {
         app?.terminate()
+        if let ownedDataDirectory {
+            try? FileManager.default.removeItem(at: ownedDataDirectory)
+        }
     }
 
     // MARK: - Helpers
@@ -37,8 +39,10 @@ final class MagicWallUITests: XCTestCase {
         app.descendants(matching: .any)[identifier]
     }
 
-    private func anyElement(matching identifier: String) -> XCUIElement {
-        app.descendants(matching: .any).matching(identifier: identifier).firstMatch
+    private func anyElement(matching identifier: String, timeout: TimeInterval = 10) -> XCUIElement {
+        let element = app.descendants(matching: .any).matching(identifier: identifier).firstMatch
+        _ = element.waitForExistence(timeout: timeout)
+        return element
     }
 
     private func sidebarItem(_ id: String) -> XCUIElement {
@@ -46,8 +50,8 @@ final class MagicWallUITests: XCTestCase {
     }
 
     private func firstVideoCard() -> XCUIElement? {
-        let card = anyElement(matching: "grid.videoCard")
-        return card.waitForExistence(timeout: 10) ? card : nil
+        let card = anyElement(matching: "grid.videoCard", timeout: 15)
+        return card.exists ? card : nil
     }
 
     private func waitForDisappearance(of element: XCUIElement, timeout: TimeInterval) -> Bool {
@@ -56,9 +60,36 @@ final class MagicWallUITests: XCTestCase {
         return XCTWaiter().wait(for: [expectation], timeout: timeout) == .completed
     }
 
-    private func firstElement(withLabel label: String) -> XCUIElement {
-        let predicate = NSPredicate(format: "label == %@", label)
-        return app.descendants(matching: .any).matching(predicate).firstMatch
+    private func makeEmptyDataDirectory() throws -> URL {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("MagicWallUITests-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        return directory
+    }
+
+    private func launchApp(dataDirectory: String?, owned: Bool = false) {
+        app?.terminate()
+
+        if owned, let existing = ownedDataDirectory {
+            try? FileManager.default.removeItem(at: existing)
+            ownedDataDirectory = nil
+        }
+
+        app = XCUIApplication()
+        // Force English so label-based assertions are deterministic.
+        app.launchArguments += ["-appLanguage", "en"]
+        if let dataDirectory {
+            app.launchEnvironment["MAGICWALL_DATA_DIR"] = dataDirectory
+            currentDataDirectory = dataDirectory
+        }
+        if owned, let dataDirectory {
+            ownedDataDirectory = URL(fileURLWithPath: dataDirectory, isDirectory: true)
+        }
+
+        app.launch()
+        app.activate()
+        XCTAssertTrue(app.windows.firstMatch.waitForExistence(timeout: 20), "Main window should appear")
+        app.windows.firstMatch.click()
     }
 
     // MARK: - Tests
@@ -73,8 +104,9 @@ final class MagicWallUITests: XCTestCase {
 
     func testTabNavigationSwitchesContent() {
         XCTAssertTrue(
-            anyElement("home.hero").waitForExistence(timeout: 10),
-            "Home hero should be visible on launch"
+            anyElement("home.hero").waitForExistence(timeout: 10)
+                || anyElement("empty.library.title").waitForExistence(timeout: 10),
+            "Home should show either the hero or the empty state"
         )
 
         sidebarItem("explore").click()
@@ -91,9 +123,33 @@ final class MagicWallUITests: XCTestCase {
 
         sidebarItem("home").click()
         XCTAssertTrue(
-            anyElement("home.hero").waitForExistence(timeout: 5),
-            "Home hero should be visible again after navigating back"
+            anyElement("home.hero").waitForExistence(timeout: 5)
+                || anyElement("empty.library.title").waitForExistence(timeout: 5),
+            "Home should be visible again after navigating back"
         )
+    }
+
+    /// The empty library is a first-class state: every tab must explain how to
+    /// add videos and offer the import action without requiring a fixture.
+    func testEmptyLibraryShowsEmptyState() throws {
+        let directory = try makeEmptyDataDirectory()
+        launchApp(dataDirectory: directory.path, owned: true)
+
+        XCTAssertTrue(
+            anyElement("empty.library.title").waitForExistence(timeout: 15),
+            "Empty library title should be visible on Home"
+        )
+        XCTAssertTrue(anyElement("empty.import").exists, "Empty state should offer the import action")
+        XCTAssertFalse(anyElement("grid.videoCard").exists, "No video cards should exist in an empty library")
+
+        for id in ["explore", "library", "favorites", "home"] {
+            sidebarItem(id).click()
+            XCTAssertTrue(
+                anyElement("empty.library.title").waitForExistence(timeout: 5),
+                "Tab '\(id)' should show the empty-library state"
+            )
+            XCTAssertFalse(anyElement("grid.videoCard").exists, "Tab '\(id)' should not show video cards")
+        }
     }
 
     /// Regression: previously the preview was layered inside the detail area
@@ -102,7 +158,7 @@ final class MagicWallUITests: XCTestCase {
     /// it closes the preview instead of navigating underneath it.
     func testPreviewBlocksNavigationUnderneath() throws {
         guard let card = firstVideoCard() else {
-            throw XCTSkip("Library is empty — import fixtures with mwctl first")
+            throw XCTSkip("Library is empty — run via Scripts/e2e.sh or import fixtures with mwctl first")
         }
         card.click()
 
@@ -125,7 +181,7 @@ final class MagicWallUITests: XCTestCase {
 
     func testPreviewCloseButtonWorks() throws {
         guard let card = firstVideoCard() else {
-            throw XCTSkip("Library is empty — import fixtures with mwctl first")
+            throw XCTSkip("Library is empty — run via Scripts/e2e.sh or import fixtures with mwctl first")
         }
         card.click()
 
@@ -138,14 +194,94 @@ final class MagicWallUITests: XCTestCase {
         XCTAssertTrue(waitForDisappearance(of: overlay, timeout: 5), "Preview should close from its X button")
     }
 
+    /// Renames a video from the fullscreen preview and verifies the change is
+    /// reflected immediately and persisted across an app relaunch.
+    func testRenameVideoFromPreview() throws {
+        guard let card = firstVideoCard() else {
+            throw XCTSkip("Library is empty — run via Scripts/e2e.sh or import fixtures with mwctl first")
+        }
+        card.click()
+
+        let overlay = anyElement("preview.overlay")
+        XCTAssertTrue(overlay.waitForExistence(timeout: 8), "Preview overlay should appear")
+
+        let renameButton = anyElement("preview.rename")
+        XCTAssertTrue(renameButton.waitForExistence(timeout: 5), "Rename button should exist")
+        renameButton.click()
+
+        let sheet = app.sheets.firstMatch
+        XCTAssertTrue(sheet.waitForExistence(timeout: 5), "Rename alert should appear")
+
+        let field = sheet.textFields.firstMatch
+        XCTAssertTrue(field.waitForExistence(timeout: 5), "Rename field should appear")
+        field.click()
+        field.typeKey("a", modifierFlags: .command)
+
+        let newTitle = "Renamed \(UUID().uuidString.prefix(6))"
+        field.typeText(newTitle)
+
+        let save = sheet.buttons["Save"]
+        XCTAssertTrue(save.waitForExistence(timeout: 5), "Save button should appear")
+        save.click()
+
+        let previewTitle = anyElement("preview.title")
+        XCTAssertTrue(previewTitle.waitForExistence(timeout: 5), "Preview title should exist")
+        XCTAssertTrue(app.staticTexts[newTitle].waitForExistence(timeout: 5), "Preview title should update immediately")
+
+        anyElement("preview.close").click()
+        XCTAssertTrue(waitForDisappearance(of: overlay, timeout: 5))
+        XCTAssertTrue(app.staticTexts[newTitle].waitForExistence(timeout: 5), "Card title should update")
+
+        // Relaunch against the same data directory and check persistence.
+        app.terminate()
+        launchApp(dataDirectory: currentDataDirectory)
+        XCTAssertTrue(
+            app.staticTexts[newTitle].waitForExistence(timeout: 15),
+            "Renamed title should survive an app relaunch"
+        )
+    }
+
+    /// Regression: the app keeps running after the window is closed (the
+    /// wallpaper engine must not stop), but activating it again has to bring
+    /// the library window back instead of leaving the app with no UI.
+    func testWindowReopensAfterClose() {
+        let window = app.windows["MagicWall"]
+        XCTAssertTrue(window.waitForExistence(timeout: 20), "Main window should exist")
+
+        window.buttons[XCUIIdentifierCloseWindow].click()
+        XCTAssertTrue(waitForDisappearance(of: window, timeout: 10), "Main window should close")
+
+        // Same path Finder/Dock use: open the already running app, which asks
+        // the delegate to handle the reopen. Match the app under test by path,
+        // not just by bundle id, so stray copies cannot satisfy the open.
+        let expectedURL = Bundle.main.bundleURL
+            .deletingLastPathComponent()
+            .appendingPathComponent("MagicWall.app")
+        let runningApp = NSWorkspace.shared.runningApplications.first {
+            $0.bundleIdentifier == "app.magicwall"
+                && $0.bundleURL?.standardizedFileURL == expectedURL.standardizedFileURL
+        } ?? NSWorkspace.shared.runningApplications.first { $0.bundleIdentifier == "app.magicwall" }
+        guard let url = runningApp?.bundleURL else {
+            return XCTFail("Could not resolve the app bundle URL")
+        }
+        NSWorkspace.shared.openApplication(
+            at: url,
+            configuration: NSWorkspace.OpenConfiguration(),
+            completionHandler: nil
+        )
+
+        XCTAssertTrue(
+            app.windows["MagicWall"].waitForExistence(timeout: 15),
+            "Activating the app should restore the closed library window"
+        )
+    }
+
     func testSettingsWindowShowsThemeEditor() {
         app.buttons["sidebar.settings"].click()
 
-        let themeTab = firstElement(withLabel: "Theme")
+        let themeTab = anyElement("settings.nav.theme")
         XCTAssertTrue(themeTab.waitForExistence(timeout: 15), "Settings should open with a Theme tab")
-        if themeTab.isHittable {
-            themeTab.click()
-        }
+        themeTab.click()
 
         XCTAssertTrue(
             anyElement("theme.editor").waitForExistence(timeout: 10),

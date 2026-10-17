@@ -21,6 +21,9 @@ struct ContentView: View {
     @State private var isNamingCategory = false
     @State private var newCategoryName = ""
 
+    @State private var renamingVideo: Video?
+    @State private var renameText = ""
+
     var body: some View {
         ZStack {
             HStack(spacing: 0) {
@@ -43,6 +46,7 @@ struct ContentView: View {
                 VideoPreviewView(
                     video: video,
                     onNewCategory: beginCategoryCreation,
+                    onRename: beginRenaming,
                     onClose: {
                         withAnimation(.easeOut(duration: 0.15)) { previewVideo = nil }
                     }
@@ -53,7 +57,7 @@ struct ContentView: View {
             }
         }
         .environment(\.libraryDidMutate, { rebuildMembership() })
-        .preferredColorScheme(.dark)
+        .preferredColorScheme(theme.active.preferredColorScheme)
         .task { rebuildMembership() }
         .onChange(of: viewModel.videos) { _, _ in rebuildMembership() }
         .onChange(of: viewModel.categories) { _, _ in rebuildMembership() }
@@ -75,6 +79,19 @@ struct ContentView: View {
             Button(L("common.cancel"), role: .cancel) { newCategoryName = "" }
         } message: {
             Text(L("category.new.message"))
+        }
+        .alert(L("video.rename.title"), isPresented: isRenamingVideoPresented) {
+            TextField(L("video.rename.field"), text: $renameText)
+                .accessibilityIdentifier("rename.field")
+            Button(L("common.save")) { commitRename() }
+                .accessibilityIdentifier("rename.save")
+            Button(L("common.cancel"), role: .cancel) {
+                renamingVideo = nil
+                renameText = ""
+            }
+            .accessibilityIdentifier("rename.cancel")
+        } message: {
+            Text(L("video.rename.message"))
         }
     }
 
@@ -104,28 +121,32 @@ struct ContentView: View {
                     videos: viewModel.videos,
                     membership: membership,
                     onOpen: open,
-                    onNewCategory: beginCategoryCreation
+                    onNewCategory: beginCategoryCreation,
+                    onRename: beginRenaming
                 )
             case .explore:
                 ExploreView(
                     videos: viewModel.videos,
                     membership: membership,
                     onOpen: open,
-                    onNewCategory: beginCategoryCreation
+                    onNewCategory: beginCategoryCreation,
+                    onRename: beginRenaming
                 )
             case .library:
                 LibraryView(
                     videos: viewModel.videos,
                     membership: membership,
                     onOpen: open,
-                    onNewCategory: beginCategoryCreation
+                    onNewCategory: beginCategoryCreation,
+                    onRename: beginRenaming
                 )
             case .favorites:
                 FavoritesView(
                     videos: viewModel.videos.filter { viewModel.favoriteIDs.contains($0.id) },
                     membership: membership,
                     onOpen: open,
-                    onNewCategory: beginCategoryCreation
+                    onNewCategory: beginCategoryCreation,
+                    onRename: beginRenaming
                 )
             }
         }
@@ -151,7 +172,8 @@ struct ContentView: View {
                         videos: viewModel.displayVideos,
                         membership: membership,
                         onOpen: open,
-                        onNewCategory: beginCategoryCreation
+                        onNewCategory: beginCategoryCreation,
+                        onRename: beginRenaming
                     )
                     .padding(.horizontal, MagicWallLayout.gutter)
                 }
@@ -260,6 +282,32 @@ struct ContentView: View {
     private func beginCategoryCreation() {
         newCategoryName = ""
         isNamingCategory = true
+    }
+
+    private var isRenamingVideoPresented: Binding<Bool> {
+        Binding(
+            get: { renamingVideo != nil },
+            set: { isPresented in
+                if !isPresented {
+                    renamingVideo = nil
+                    renameText = ""
+                }
+            }
+        )
+    }
+
+    private func beginRenaming(_ video: Video) {
+        renameText = video.title
+        renamingVideo = video
+    }
+
+    private func commitRename() {
+        guard let video = renamingVideo else { return }
+        renamingVideo = nil
+        guard let updated = viewModel.rename(video, to: renameText) else { return }
+        if previewVideo?.id == updated.id {
+            previewVideo = updated
+        }
     }
 
     private func createCategory() {

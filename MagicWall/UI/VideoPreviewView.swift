@@ -7,6 +7,7 @@ import SwiftUI
 struct VideoPreviewView: View {
     let video: Video
     let onNewCategory: () -> Void
+    let onRename: (Video) -> Void
     let onClose: () -> Void
 
     @EnvironmentObject private var theme: ThemeStore
@@ -45,10 +46,6 @@ struct VideoPreviewView: View {
 
     private var topBar: some View {
         HStack(alignment: .center, spacing: 12) {
-            if isLive {
-                LiveBadge()
-            }
-
             Spacer(minLength: 8)
 
             Button(action: onClose) {
@@ -81,6 +78,7 @@ struct VideoPreviewView: View {
                 .lineLimit(2)
                 .shadow(color: .black.opacity(0.5), radius: 12, y: 4)
                 .frame(maxWidth: 820, alignment: .leading)
+                .accessibilityIdentifier("preview.title")
 
             metadata
 
@@ -98,6 +96,9 @@ struct VideoPreviewView: View {
 
     private var metadata: some View {
         HStack(spacing: 7) {
+            if isLive {
+                LiveBadge()
+            }
             if video.resolutionLabel != "—" {
                 MetadataBadge(icon: "rectangle.on.rectangle", text: video.resolutionLabel)
             }
@@ -135,6 +136,19 @@ struct VideoPreviewView: View {
             .menuIndicator(.hidden)
             .fixedSize()
             .help(L("preview.manageCategories.help"))
+
+            Button {
+                onRename(video)
+            } label: {
+                Image(systemName: "pencil")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(theme.active.textPrimaryColor)
+                    .frame(width: 38, height: 38)
+                    .background(theme.active.buttonSecondaryBackgroundColor, in: Circle())
+            }
+            .buttonStyle(PressableButtonStyle())
+            .accessibilityIdentifier("preview.rename")
+            .help(L("preview.rename.help"))
 
             Button {
                 viewModel.toggleFavorite(video)
@@ -196,6 +210,7 @@ struct VideoPreviewView: View {
             viewModel: viewModel,
             engine: engine,
             onNewCategory: onNewCategory,
+            onRename: onRename,
             didMutate: libraryDidMutate
         )
     }

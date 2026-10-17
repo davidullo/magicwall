@@ -10,8 +10,18 @@ import Foundation
 public enum AppPaths {
     public static let appSupportFolderName = "MagicWall"
 
+    /// Overrides the on-disk data root (database, managed videos, posters,
+    /// themes). Used by UI tests and development tooling to keep a real user
+    /// library untouched. Empty values fall back to Application Support.
+    public static let dataDirectoryEnvironmentKey = "MAGICWALL_DATA_DIR"
+
     public static var appSupportDirectory: URL {
-        FileManager.default
+        if let override = ProcessInfo.processInfo.environment[dataDirectoryEnvironmentKey],
+           !override.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            let expanded = (override as NSString).expandingTildeInPath
+            return URL(fileURLWithPath: expanded, isDirectory: true)
+        }
+        return FileManager.default
             .urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appendingPathComponent(appSupportFolderName, isDirectory: true)
     }

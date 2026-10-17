@@ -8,31 +8,43 @@ struct LibraryView: View {
     let membership: [String: Set<Int64>]
     let onOpen: (Video) -> Void
     let onNewCategory: () -> Void
+    let onRename: (Video) -> Void
 
     @EnvironmentObject private var viewModel: LibraryViewModel
 
     var body: some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: 22) {
-                header
-                    .accessibilityIdentifier("library.header")
+        Group {
+            if viewModel.videos.isEmpty {
+                VStack(alignment: .leading, spacing: 22) {
+                    header
+                        .accessibilityIdentifier("library.header")
 
-                if viewModel.videos.isEmpty {
                     EmptyLibraryState(onImport: { viewModel.presentImportPanel() })
-                } else {
-                    VideoGridView(
-                        videos: videos,
-                        membership: membership,
-                        onOpen: onOpen,
-                        onNewCategory: onNewCategory
-                    )
-                    .padding(.horizontal, MagicWallLayout.gutter)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
+                .padding(.top, MagicWallLayout.contentTopInset)
+                .padding(.bottom, 48)
+            } else {
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 22) {
+                        header
+                            .accessibilityIdentifier("library.header")
+
+                        VideoGridView(
+                            videos: videos,
+                            membership: membership,
+                            onOpen: onOpen,
+                            onNewCategory: onNewCategory,
+                            onRename: onRename
+                        )
+                        .padding(.horizontal, MagicWallLayout.gutter)
+                    }
+                    .padding(.top, MagicWallLayout.contentTopInset)
+                    .padding(.bottom, 48)
+                }
+                .scrollIndicators(.hidden)
             }
-            .padding(.top, MagicWallLayout.contentTopInset)
-            .padding(.bottom, 48)
         }
-        .scrollIndicators(.hidden)
     }
 
     private var header: some View {
@@ -67,39 +79,61 @@ struct FavoritesView: View {
     let membership: [String: Set<Int64>]
     let onOpen: (Video) -> Void
     let onNewCategory: () -> Void
+    let onRename: (Video) -> Void
 
     @EnvironmentObject private var viewModel: LibraryViewModel
 
     var body: some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: 22) {
-                SectionHeader(
-                    title: L("tab.favorites"),
-                    subtitle: videos.isEmpty ? nil : videoCountLabel(videos.count)
-                )
-                .padding(.horizontal, MagicWallLayout.gutter)
+        Group {
+            if viewModel.videos.isEmpty {
+                VStack(alignment: .leading, spacing: 22) {
+                    favoritesHeader
 
-                if viewModel.videos.isEmpty {
                     EmptyLibraryState(onImport: { viewModel.presentImportPanel() })
-                } else if videos.isEmpty {
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+                .padding(.top, MagicWallLayout.contentTopInset)
+                .padding(.bottom, 48)
+            } else if videos.isEmpty {
+                VStack(alignment: .leading, spacing: 22) {
+                    favoritesHeader
+
                     MessageState(
                         icon: "heart",
                         title: L("favorites.empty.title"),
                         message: L("favorites.empty.message")
                     )
-                } else {
-                    VideoGridView(
-                        videos: videos,
-                        membership: membership,
-                        onOpen: onOpen,
-                        onNewCategory: onNewCategory
-                    )
-                    .padding(.horizontal, MagicWallLayout.gutter)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
+                .padding(.top, MagicWallLayout.contentTopInset)
+                .padding(.bottom, 48)
+            } else {
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 22) {
+                        favoritesHeader
+
+                        VideoGridView(
+                            videos: videos,
+                            membership: membership,
+                            onOpen: onOpen,
+                            onNewCategory: onNewCategory,
+                            onRename: onRename
+                        )
+                        .padding(.horizontal, MagicWallLayout.gutter)
+                    }
+                    .padding(.top, MagicWallLayout.contentTopInset)
+                    .padding(.bottom, 48)
+                }
+                .scrollIndicators(.hidden)
             }
-            .padding(.top, MagicWallLayout.contentTopInset)
-            .padding(.bottom, 48)
         }
-        .scrollIndicators(.hidden)
+    }
+
+    private var favoritesHeader: some View {
+        SectionHeader(
+            title: L("tab.favorites"),
+            subtitle: videos.isEmpty ? nil : videoCountLabel(videos.count)
+        )
+        .padding(.horizontal, MagicWallLayout.gutter)
     }
 }

@@ -19,6 +19,7 @@ public protocol LibraryRepository: AnyObject, Sendable {
     func videos(inCategorySlug slug: String?) throws -> [Video]
     func searchVideos(matching query: String) throws -> [Video]
     func save(_ video: Video) throws
+    func renameVideo(id: String, title: String) throws
     func deleteVideo(id: String) throws
     func markPlayed(id: String) throws
 
@@ -115,6 +116,22 @@ public final class GRDBLibraryRepository: LibraryRepository, @unchecked Sendable
     public func save(_ video: Video) throws {
         try database.dbQueue.write { db in
             try video.save(db)
+        }
+    }
+
+    public func renameVideo(id: String, title: String) throws {
+        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            throw LibraryError.invalidInput("Video title must not be empty.")
+        }
+        try database.dbQueue.write { db in
+            guard try Video.filter(Column("id") == id).fetchOne(db) != nil else {
+                throw LibraryError.invalidInput("No video with id \(id).")
+            }
+            try db.execute(
+                sql: "UPDATE videos SET title = ? WHERE id = ?",
+                arguments: [trimmed, id]
+            )
         }
     }
 

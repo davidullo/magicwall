@@ -7,35 +7,40 @@ struct HomeView: View {
     let membership: [String: Set<Int64>]
     let onOpen: (Video) -> Void
     let onNewCategory: () -> Void
+    let onRename: (Video) -> Void
 
     @EnvironmentObject private var viewModel: LibraryViewModel
 
     var body: some View {
-        ScrollView {
+        Group {
             if videos.isEmpty {
                 EmptyLibraryState(onImport: { viewModel.presentImportPanel() })
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                LazyVStack(alignment: .leading, spacing: 30) {
-                    if let hero = heroVideo {
-                        HeroBanner(video: hero, onOpen: { onOpen(hero) })
-                            .accessibilityIdentifier("home.hero")
-                    }
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 30) {
+                        if let hero = heroVideo {
+                            HeroBanner(video: hero, onOpen: { onOpen(hero) })
+                                .accessibilityIdentifier("home.hero")
+                        }
 
-                    ForEach(shelves) { shelf in
-                        VideoShelf(
-                            title: shelf.title,
-                            subtitle: shelf.subtitle,
-                            videos: shelf.videos,
-                            membership: membership,
-                            onOpen: onOpen,
-                            onNewCategory: onNewCategory
-                        )
+                        ForEach(shelves) { shelf in
+                            VideoShelf(
+                                title: shelf.title,
+                                subtitle: shelf.subtitle,
+                                videos: shelf.videos,
+                                membership: membership,
+                                onOpen: onOpen,
+                                onNewCategory: onNewCategory,
+                                onRename: onRename
+                            )
+                        }
                     }
+                    .padding(.bottom, 48)
                 }
-                .padding(.bottom, 48)
+                .scrollIndicators(.hidden)
             }
         }
-        .scrollIndicators(.hidden)
     }
 
     // MARK: - Derived content

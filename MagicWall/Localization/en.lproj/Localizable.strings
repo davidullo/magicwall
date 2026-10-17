@@ -81,6 +81,13 @@
 "video.play" = "Play as wallpaper";
 "video.applyToScreen" = "Apply to screen";
 "video.applyToAllScreens" = "Apply to all screens";
+"video.rename" = "Rename…";
+"video.rename.title" = "Rename video";
+"video.rename.field" = "Title";
+"video.rename.message" = "Choose a new title for this wallpaper.";
+"video.rename.empty" = "The title can't be empty.";
+"video.status.renamed" = "Renamed to “%@”.";
+"video.error.rename" = "Could not rename video: %@";
 "video.delete" = "Delete video";
 "video.screenAlreadyActive" = "%@ — already active";
 "video.status.playingAll" = "“%@” is now playing on all screens.";
@@ -102,6 +109,7 @@
 /* Preview overlay */
 "preview.close.help" = "Close (Esc)";
 "preview.manageCategories.help" = "Manage categories";
+"preview.rename.help" = "Rename video";
 "preview.delete.help" = "Delete from library";
 
 /* Import */
@@ -118,19 +126,26 @@
 "library.error" = "Library error: %@";
 
 /* Settings — tabs */
+"settings.title" = "Settings";
 "settings.tab.general" = "General";
-"settings.tab.theme" = "Theme";
+"settings.tab.theme" = "Appearance";
 "settings.tab.about" = "About";
+"settings.general.subtitle" = "Playback, app behaviour and your library.";
+"settings.theme.subtitle" = "Pick a theme and fine-tune every visual token.";
 
 /* Settings — playback */
 "settings.playback.title" = "Playback";
 "settings.playback.pauseWallpaper" = "Pause wallpaper";
+"settings.playback.automatic" = "Automatic pause";
 "settings.playback.pauseOnBattery" = "Pause on battery";
 "settings.playback.pauseOccluded" = "Pause when desktop is hidden";
 "settings.playback.pauseLowPower" = "Pause in Low Power Mode";
 "settings.playback.pauseLocked" = "Pause when screen is locked";
 "settings.playback.pauseThermal" = "Pause under thermal pressure";
 "settings.playback.paused" = "Paused: %@";
+
+/* Settings — application */
+"settings.application.title" = "Application";
 
 /* Settings — startup */
 "settings.startup.title" = "Startup";
@@ -155,6 +170,8 @@
 
 /* Settings — maintenance */
 "settings.maintenance.title" = "Maintenance";
+"settings.maintenance.activeWallpapers" = "Active wallpapers";
+"settings.maintenance.hint" = "Removes the wallpaper from every screen.";
 
 /* Settings — about */
 "settings.about.version" = "Version";
@@ -183,6 +200,8 @@
 
 /* Theme editor — saved themes */
 "theme.section.saved" = "Saved Themes";
+"theme.activeTheme" = "Active theme";
+"theme.manage.help" = "Manage themes";
 "theme.accent.help" = "Accent colour of this theme";
 "theme.pill.active" = "Active";
 "theme.pill.builtIn" = "Built-in";

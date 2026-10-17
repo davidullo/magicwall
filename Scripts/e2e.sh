@@ -10,9 +10,11 @@
 #   - Accessibility permission for the test runner: the first run may prompt,
 #     or grant it manually in System Settings → Privacy & Security →
 #     Accessibility / Automation (Xcode and your terminal app).
-#   - A non-empty library for the preview tests. Import fixtures with:
-#       Packages/MagicWallCore/.build/debug/mwctl import <files...>
-#     (see "Dev tools" in README.md).
+#
+# The script also prepares an isolated library in a temporary directory:
+# a generated test video is imported with mwctl and the path is exported as
+# MW_E2E_SEEDED_DATA_DIR. The app receives the same path through
+# MAGICWALL_DATA_DIR, so UI tests never touch the real user library.
 set -euo pipefail
 
 export DEVELOPER_DIR="${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Developer}"
@@ -23,6 +25,20 @@ LOCK=/tmp/mw-xcodegen.lock
 while ! mkdir "$LOCK" 2>/dev/null; do sleep 1; done
 xcodegen generate >/dev/null
 rmdir "$LOCK"
+
+# Isolated E2E library (fresh on every run).
+E2E_DATA_ROOT="${TMPDIR:-/tmp}/mw-e2e-data"
+SEEDED_DATA_DIR="$E2E_DATA_ROOT/seeded"
+rm -rf "$E2E_DATA_ROOT"
+mkdir -p "$SEEDED_DATA_DIR"
+
+# Build mwctl and import a generated fixture into the isolated library.
+swift build --package-path Packages/MagicWallCore --product mwctl >/dev/null
+MWCTL_BIN_DIR="$(swift build --package-path Packages/MagicWallCore --show-bin-path)"
+FIXTURE="$E2E_DATA_ROOT/test-pattern.mp4"
+swift DevTools/make-test-video.swift "$FIXTURE" >/dev/null
+MAGICWALL_DATA_DIR="$SEEDED_DATA_DIR" "$MWCTL_BIN_DIR/mwctl" import "$FIXTURE" >/dev/null
+export MW_E2E_SEEDED_DATA_DIR="$SEEDED_DATA_DIR"
 
 EXTRA_ARGS=("$@")
 if [ ${#EXTRA_ARGS[@]} -eq 0 ]; then
