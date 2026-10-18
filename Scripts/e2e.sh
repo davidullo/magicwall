@@ -3,7 +3,12 @@
 # End-to-end UI tests for MagicWall.
 #
 #   ./Scripts/e2e.sh                          # run all UI tests
-#   ./Scripts/e2e.sh -only-testing:MagicWallUITests/testSidebarIsComplete
+#   ./Scripts/e2e.sh -only-testing:MagicWallUITests/MagicWallUITests/testSidebarIsComplete
+#
+# Note: `-only-testing:` needs the module *and* the class
+# (`MagicWallUITests/MagicWallUITests/testName`). The short
+# `MagicWallUITests/testName` form matches nothing and still exits 0, so a run
+# that executed zero tests is treated as a failure below.
 #
 # Requirements:
 #   - Xcode installed (DEVELOPER_DIR can be overridden)
@@ -64,4 +69,12 @@ if [ "$STATUS" -ne 0 ]; then
     echo "E2E FAILED (exit $STATUS)"
     exit "$STATUS"
 fi
+
+# A filter that matches nothing exits 0 and reports success: zero executed tests
+# is a broken invocation, not a pass.
+if grep -q "Executed 0 tests" /tmp/mw-e2e.log; then
+    echo "E2E FAILED: the -only-testing filter matched no tests (use module/class/testName)"
+    exit 1
+fi
+
 echo "E2E PASSED"
