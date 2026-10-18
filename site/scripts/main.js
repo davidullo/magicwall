@@ -11,14 +11,17 @@
   /** Update text only when it changes, so aria-live regions do not re-announce. */
   const setText = (el, value) => { if (el && value && el.textContent.trim() !== value) el.textContent = value; };
 
-  /** Latest release — GitHub API behind a 30-minute sessionStorage cache. */
-  const RELEASE_KEY = 'mw:release:v1';
-  const RELEASE_TTL = 30 * 60 * 1000;
+  /** Latest release — GitHub API behind a 5-minute sessionStorage cache.
+      Bump RELEASE_KEY when a stale cached payload must be invalidated. */
+  const RELEASE_KEY = 'mw:release:v2';
+  const RELEASE_TTL = 5 * 60 * 1000;
   const RELEASE_API = 'https://api.github.com/repos/davidullo/magicwall/releases/latest';
   const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
   /** Asset bytes → "7.7 MB"; ISO timestamp → "17 Oct 2026" (fixed English). */
   const formatSize = (bytes) => { const n = Number(bytes); return isFinite(n) && n > 0 ? (n / 1048576).toFixed(1) + ' MB' : ''; };
+  /** Asset bytes → "10 MB" (whole MB, rounded down for prose). */
+  const formatSizeRound = (bytes) => { const n = Number(bytes); return isFinite(n) && n > 0 ? Math.floor(n / 1048576) + ' MB' : ''; };
   const formatDate = (iso) => { const d = new Date(iso);
     return isNaN(d) ? '' : `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`; };
   /** First .dmg asset (case-insensitive), else .zip, else null. */
@@ -43,6 +46,7 @@
     $$('[data-release-version]').forEach((el) => setText(el, rel.tag));
     $$('[data-release-name]').forEach((el) => setText(el, rel.name));
     $$('[data-release-size]').forEach((el) => setText(el, formatSize(rel.bytes)));
+    $$('[data-release-size-round]').forEach((el) => setText(el, formatSizeRound(rel.bytes)));
     $$('[data-release-date]').forEach((el) => setText(el, formatDate(rel.date)));
     setText($('[data-release-status]'), [rel.tag, formatSize(rel.bytes), 'macOS 15+'].filter(Boolean).join(' · '));
   };
@@ -50,7 +54,7 @@
   /** Load the latest release (cache first); keeps placeholders on failure. Never rejects. */
   const initRelease = async () => {
     const status = $('[data-release-status]');
-    const hooks = '[data-release-link],[data-release-version],[data-release-name],[data-release-size],[data-release-date]';
+    const hooks = '[data-release-link],[data-release-version],[data-release-name],[data-release-size],[data-release-size-round],[data-release-date]';
     if (!$(hooks) && !status) return;
     try {
       const cached = readReleaseCache();
