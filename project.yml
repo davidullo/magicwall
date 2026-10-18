@@ -14,8 +14,8 @@ settings:
     # bundle whose extension carries a different version, so this pair is the
     # single source of truth and the release scripts bump it (every occurrence)
     # together.
-    MARKETING_VERSION: "0.5.0"
-    CURRENT_PROJECT_VERSION: "6"
+    MARKETING_VERSION: "0.5.1"
+    CURRENT_PROJECT_VERSION: "7"
 packages:
   MagicWallCore:
     path: Packages/MagicWallCore

@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>MagicWall — DMG background</title>
+<!--
+  Source for the MagicWall DMG window background.
+
+  Canvas: 660 × 420 CSS px (the Finder content area).
+  Rendered by render-background.sh into:
+    background.png      660 × 420 px, 72 dpi
+    background@2x.png  1320 × 840 px, 144 dpi
+
+  Keep text/icon labels inside the top ~360 px: Finder's title bar and the
+  optional path bar can cover the bottom of the background. The brick pattern
+  below y=300 is decorative only.
+-->
+<style>
+  @font-face {
+    font-family: "Inter";
+    src: url("../../site/assets/font/inter-latin-var.woff2") format("woff2");
+    font-weight: 100 900;
+    font-display: block;
+  }
+  @font-face {
+    font-family: "Geist Mono";
+    src: url("../../site/assets/font/geist-mono-latin-var.woff2") format("woff2");
+    font-weight: 100 900;
+    font-display: block;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    width: 660px;
+    height: 420px;
+    overflow: hidden;
+    background: #fff9fd;
+  }
+
+  body {
+    position: relative;
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+    color: #16121a;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── background wash ─────────────────────────────────────────────── */
+  .wash {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(62% 72% at 4% -10%, rgba(255, 149, 205, 0.42), rgba(255, 149, 205, 0) 68%),
+      radial-gradient(46% 60% at 98% 2%, rgba(255, 214, 236, 0.85), rgba(255, 214, 236, 0) 70%),
+      linear-gradient(180deg, #fffdfe 0%, #fff6fb 52%, #ffeaf5 100%);
+  }
+
+  /* soft glow under each icon position, so the real Finder icons sit on a
+     gentle pool of light instead of a flat background */
+  .halo {
+    position: absolute;
+    width: 190px;
+    height: 190px;
+    border-radius: 50%;
+    top: 104px;
+    background: radial-gradient(circle, rgba(255, 149, 205, 0.20), rgba(255, 149, 205, 0) 68%);
+  }
+  .halo.left  { left: 85px; }
+  .halo.right { left: 385px; }
+
+  /* ── brick pattern from the app icon / site ──────────────────────── */
+  .bricks {
+    position: absolute;
+    inset: auto 0 0 0;
+    height: 154px;
+    opacity: 0.72;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='212' height='112'%3E%3Cg fill='%23ffd3e9'%3E%3Crect x='2' y='2' width='100' height='50' rx='11'/%3E%3Crect x='110' y='2' width='100' height='50' rx='11'/%3E%3Crect x='-51' y='58' width='100' height='50' rx='11'/%3E%3Crect x='57' y='58' width='100' height='50' rx='11'/%3E%3Crect x='165' y='58' width='100' height='50' rx='11'/%3E%3C/g%3E%3C/svg%3E");
+    background-size: 212px 112px;
+    -webkit-mask-image: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.42) 44%, #000 100%);
+    mask-image: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.42) 44%, #000 100%);
+  }
+
+  .grain {
+    position: absolute;
+    inset: 0;
+    opacity: 0.045;
+    mix-blend-mode: multiply;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* ── instruction line ────────────────────────────────────────────── */
+  .copy {
+    position: absolute;
+    top: 51px;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    color: #4c434e;
+    font-size: 14.5px;
+    font-weight: 560;
+    letter-spacing: -0.012em;
+    white-space: nowrap;
+  }
+  .spark {
+    width: 10px;
+    height: 10px;
+    flex: none;
+    opacity: 0.82;
+  }
+
+  /* ── arrow between the two icons ─────────────────────────────────── */
+  .arrow {
+    position: absolute;
+    left: 252px;
+    top: 165px;
+    width: 156px;
+    height: 74px;
+    overflow: visible;
+    filter: drop-shadow(0 3px 5px rgba(226, 79, 159, 0.18));
+  }
+
+  .sparkle-a { position: absolute; left: 238px; top: 132px; }
+  .sparkle-b { position: absolute; left: 404px; top: 146px; }
+  .sparkle-c { position: absolute; left: 325px; top: 112px; }
+  .twinkle { position: absolute; fill: #f76bb8; opacity: 0.58; }
+
+  /* ── tiny caption, kept above the decorative bricks ──────────────── */
+  .caption {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 318px;
+    text-align: center;
+    font-family: "Geist Mono", ui-monospace, monospace;
+    font-size: 8.5px;
+    letter-spacing: 0.11em;
+    color: #b93c7f;
+    opacity: 0.72;
+  }
+</style>
+</head>
+<body>
+  <div class="wash"></div>
+  <div class="halo left"></div>
+  <div class="halo right"></div>
+
+  <div class="copy">
+    <svg class="spark" viewBox="0 0 16 16" aria-hidden="true">
+      <path d="M8 0l1.8 6.2L16 8l-6.2 1.8L8 16l-1.8-6.2L0 8l6.2-1.8z" fill="#f76bb8"/>
+    </svg>
+    <span>Drag MagicWall into Applications</span>
+    <svg class="spark" viewBox="0 0 16 16" aria-hidden="true">
+      <path d="M8 0l1.8 6.2L16 8l-6.2 1.8L8 16l-1.8-6.2L0 8l6.2-1.8z" fill="#f76bb8"/>
+    </svg>
+  </div>
+
+  <svg class="twinkle sparkle-a" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true">
+    <path d="M8 0l1.8 6.2L16 8l-6.2 1.8L8 16l-1.8-6.2L0 8l6.2-1.8z"/>
+  </svg>
+  <svg class="twinkle sparkle-b" width="9" height="9" viewBox="0 0 16 16" aria-hidden="true">
+    <path d="M8 0l1.8 6.2L16 8l-6.2 1.8L8 16l-1.8-6.2L0 8l6.2-1.8z"/>
+  </svg>
+  <svg class="twinkle sparkle-c" width="7" height="7" viewBox="0 0 16 16" aria-hidden="true">
+    <path d="M8 0l1.8 6.2L16 8l-6.2 1.8L8 16l-1.8-6.2L0 8l6.2-1.8z"/>
+  </svg>
+
+  <svg class="arrow" viewBox="0 0 156 74" fill="none" aria-hidden="true">
+    <path d="M6 45C42 27 103 24 142 39" stroke="#f76bb8" stroke-width="2.6" stroke-linecap="round"/>
+    <path d="M129 29.5L143 39.2 128.5 47.5" stroke="#f76bb8" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="6" cy="45" r="3.1" fill="#f76bb8"/>
+  </svg>
+
+  <div class="caption">macOS 15 or later · universal</div>
+  <div class="bricks"></div>
+  <div class="grain"></div>
+</body>
+</html>

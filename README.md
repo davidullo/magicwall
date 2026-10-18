@@ -110,6 +110,8 @@ Requires **macOS 15 or later**. Builds are universal (Apple Silicon and Intel).
 
 - Xcode 27.x with the macOS SDK
 - [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`)
+- for release DMGs: [dmgbuild](https://github.com/dmgbuild/dmgbuild) 1.6.7+
+  (`pipx install "dmgbuild>=1.6.7"`)
 
 ## 🛠️ Build & run
 
@@ -161,9 +163,20 @@ For a local build only (no git, no publishing):
 ./Scripts/release.sh --native   # this Mac's architecture only, faster
 ```
 
+The styled DMG installer window is built with
+[dmgbuild](https://github.com/dmgbuild/dmgbuild) (1.6.7 or later):
+
+```bash
+pipx install "dmgbuild>=1.6.7"
+```
+
+The artwork source and layout specs live in
+[`Scripts/dmg/`](Scripts/dmg/README.md); regenerate the background with
+`./Scripts/dmg/render-background.sh`.
+
 Artifacts are written to `dist/`:
 
-- `MagicWall-<version>.dmg` (app + Applications symlink)
+- `MagicWall-<version>.dmg` (branded installer window + Applications drop target)
 - `MagicWall-<version>.zip`
 - `MagicWall-<version>.dSYM.zip` (symbols for crash reports)
 - `appcast.xml` (Developer ID builds only — the Sparkle update feed)

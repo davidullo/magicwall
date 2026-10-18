@@ -23,6 +23,9 @@
 #   appcast.xml                    (Developer ID builds only)
 #   SHA256SUMS.txt
 #
+# The styled DMG window requires dmgbuild >= 1.6.7:
+#   pipx install "dmgbuild>=1.6.7"
+#
 # The version comes from project.yml (MARKETING_VERSION/CURRENT_PROJECT_VERSION)
 # and can be overridden with --version / --build.
 set -euo pipefail
@@ -69,6 +72,8 @@ Developer ID builds also generate dist/appcast.xml for Sparkle auto-updates
 (EdDSA key from the login keychain; SPARKLE_ED_KEY_FILE to use a key file).
 --publish attaches it to the GitHub release, which serves the feed at
 https://github.com/davidullo/magicwall/releases/latest/download/appcast.xml
+
+The styled DMG window requires dmgbuild (pipx install "dmgbuild>=1.6.7").
 
 Output: dist/MagicWall-<version>.dmg, .zip, SHA256SUMS.txt (+ .dSYM.zip,
 appcast.xml on Developer ID builds).
@@ -237,11 +242,8 @@ fi
 echo "▸ Packaging…"
 ditto -c -k --sequesterRsrc --keepParent "$APP" "$ZIP"
 
-STAGE="$(mktemp -d "${TMPDIR:-/tmp}/magicwall-dmg.XXXXXX")"
-ditto "$APP" "$STAGE/$APP_NAME.app"
-ln -s /Applications "$STAGE/Applications"
-hdiutil create -quiet -volname "$APP_NAME $VERSION" -srcfolder "$STAGE" -ov -format UDZO "$DMG"
-rm -rf "$STAGE"
+echo "▸ Building DMG…"
+"$ROOT/Scripts/build-dmg.sh" "$APP" "$DMG" "$VERSION"
 
 if [[ "$SIGN_IDENTITY" != "-" ]]; then
     codesign --force --sign "$SIGN_IDENTITY" "$DMG"
