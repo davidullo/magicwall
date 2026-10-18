@@ -59,6 +59,16 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
+### Phosphene (wallpaper extension)
+
+- Source: https://github.com/kageroumado/phosphene
+- License: MIT, Copyright (c) kageroumado — full text in
+  [`MagicWallWallpaperExtension/LICENSE-Phosphene.txt`](MagicWallWallpaperExtension/LICENSE-Phosphene.txt)
+- Used by: `MagicWallWallpaperExtension/` (the `com.apple.wallpaper` extension
+  that plays magicwall videos on the desktop and lock screen through macOS's
+  own wallpaper pipeline). Identifiers were renamed and the code was integrated
+  into this project; see `MagicWallWallpaperExtension/NOTICE.md`.
+
 ## Media assets
 
 - **Starter wallpapers** — the app offers five optional 4K wallpapers

@@ -27,6 +27,7 @@ targets:
       - package: MagicWallCore
         product: MagicWallCore
       - package: Sparkle
+      - target: MagicWallWallpaperExtension
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: app.magicwall
@@ -68,6 +69,46 @@ targets:
           - CFBundleURLName: app.magicwall.deeplink
             CFBundleTypeRole: Editor
             CFBundleURLSchemes: [magicwall]
+
+  # Lock screen + desktop video wallpapers through Apple's own wallpaper
+  # pipeline (provider for `com.apple.wallpaper`). Requires macOS 26+; on
+  # earlier systems the app keeps using the desktop-level window engine.
+  # Extension code is adapted from Phosphene (MIT) — see NOTICE.md.
+  MagicWallWallpaperExtension:
+    type: extensionkit-extension
+    platform: macOS
+    deploymentTarget: "26.0"
+    sources:
+      - path: MagicWallWallpaperExtension
+        excludes:
+          - Info.plist
+          - NOTICE.md
+          - LICENSE-Phosphene.txt
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.magicwall.wallpaper-extension
+        CODE_SIGN_STYLE: Manual
+        CODE_SIGN_IDENTITY: "-"
+        DEVELOPMENT_TEAM: ""
+        SKIP_INSTALL: YES
+        ENABLE_APP_SANDBOX: YES
+        ENABLE_HARDENED_RUNTIME: YES
+        SWIFT_VERSION: "6.0"
+        SWIFT_APPROACHABLE_CONCURRENCY: YES
+        SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY: YES
+        SWIFT_OBJC_BRIDGING_HEADER: MagicWallWallpaperExtension/WallpaperExtension-Bridging-Header.h
+        LD_RUNPATH_SEARCH_PATHS:
+          - $(inherited)
+          - "@executable_path/../Frameworks"
+          - "@executable_path/../../../../Frameworks"
+    info:
+      path: MagicWallWallpaperExtension/Info.plist
+      properties:
+        CFBundlePackageType: XPC!
+        CFBundleDisplayName: MagicWall Wallpaper
+        LSMinimumSystemVersion: "26.0"
+        EXAppExtensionAttributes:
+          EXExtensionPointIdentifier: com.apple.wallpaper
 
   MagicWallUITests:
     type: bundle.ui-testing
