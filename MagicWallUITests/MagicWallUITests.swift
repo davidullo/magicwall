@@ -81,6 +81,8 @@ final class MagicWallUITests: XCTestCase {
             ownedDataDirectory = nil
         }
 
+        terminateRunningInstances()
+
         app = XCUIApplication()
         // Force English so label-based assertions are deterministic.
         app.launchArguments += ["-appLanguage", "en"]
@@ -96,6 +98,35 @@ final class MagicWallUITests: XCTestCase {
         app.activate()
         XCTAssertTrue(app.windows.firstMatch.waitForExistence(timeout: 20), "Main window should appear")
         app.windows.firstMatch.click()
+    }
+
+    /// Quits every MagicWall instance the test does not own before launching.
+    ///
+    /// An app already running outside the test — the developer's own copy, a
+    /// launch at login, or a leftover from a previous test that closed its
+    /// window — answers the launch instead of the process under test. The fresh
+    /// process then never gets a window and every assertion fails with "Main
+    /// window should appear". Terminating by bundle identifier first makes the
+    /// launch deterministic; the library lives in the database, so nothing is
+    /// lost by quitting.
+    private func terminateRunningInstances() {
+        let bundleID = "app.magicwall"
+        let running = NSRunningApplication.runningApplications(withBundleIdentifier: bundleID)
+        guard !running.isEmpty else { return }
+
+        for instance in running {
+            instance.terminate()
+        }
+
+        let deadline = Date().addingTimeInterval(5)
+        while Date() < deadline,
+              !NSRunningApplication.runningApplications(withBundleIdentifier: bundleID).isEmpty {
+            usleep(100_000)
+        }
+
+        for instance in NSRunningApplication.runningApplications(withBundleIdentifier: bundleID) {
+            instance.forceTerminate()
+        }
     }
 
     // MARK: - Tests
@@ -326,6 +357,37 @@ final class MagicWallUITests: XCTestCase {
         XCTAssertTrue(
             anyElement("theme.editor").waitForExistence(timeout: 10),
             "Theme editor should be reachable"
+        )
+
+        app.typeKey("w", modifierFlags: .command)
+    }
+
+    /// The lock screen belongs to the system's wallpaper pipeline, so the app
+    /// can only report the state and hand over the Settings pane: check that
+    /// entry point is reachable from General. The state itself depends on the
+    /// machine running the tests, so only the presence is asserted.
+    func testSettingsShowsLockScreenCard() throws {
+        // The card only exists on the systems the extension supports, so the
+        // guard is the OS version — never the element, which would let a
+        // regression pass as a skip.
+        let macOS26 = OperatingSystemVersion(majorVersion: 26, minorVersion: 0, patchVersion: 0)
+        guard ProcessInfo.processInfo.isOperatingSystemAtLeast(macOS26) else {
+            throw XCTSkip("The lock screen card requires macOS 26 or later")
+        }
+
+        app.buttons["sidebar.settings"].click()
+
+        let generalTab = anyElement("settings.nav.general")
+        XCTAssertTrue(generalTab.waitForExistence(timeout: 15), "Settings should open with a General tab")
+        generalTab.click()
+
+        XCTAssertTrue(
+            anyElement(matching: "settings.lockscreen.openSettings").exists,
+            "The card should offer the System Settings shortcut"
+        )
+        XCTAssertTrue(
+            app.staticTexts["Lock screen"].exists,
+            "The card should be titled"
         )
 
         app.typeKey("w", modifierFlags: .command)

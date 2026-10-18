@@ -138,6 +138,7 @@ struct GeneralSettingsView: View {
     @EnvironmentObject private var loginItemService: LoginItemService
     @EnvironmentObject private var localization: LocalizationManager
     @EnvironmentObject private var starterService: StarterWallpaperService
+    @EnvironmentObject private var wallpaperExtension: WallpaperExtensionService
 
     @State private var showsAutomaticPause = false
 
@@ -148,6 +149,7 @@ struct GeneralSettingsView: View {
         ) {
             playbackCard
             applicationCard
+            lockScreenCard
             libraryCard
             starterCard
             maintenanceCard
@@ -317,6 +319,76 @@ struct GeneralSettingsView: View {
                 .pickerStyle(.menu)
                 .frame(width: 145)
             }
+        }
+    }
+
+    // MARK: Lock screen
+
+    /// The lock screen is painted by macOS's own wallpaper pipeline, so the app
+    /// cannot set it: all it can do is tell the truth about what is selected and
+    /// open the one place where that changes. Hidden entirely on systems without
+    /// the pipeline the extension plugs into.
+    @ViewBuilder
+    private var lockScreenCard: some View {
+        if wallpaperExtension.availability != .unsupportedSystem {
+            SettingsCard(title: L("settings.lockscreen.title"), systemImage: "lock.display") {
+                SettingsRow(lockScreenTitle, subtitle: lockScreenSubtitle) {
+                    SettingsActionButton(
+                        title: L("settings.lockscreen.openSettings"),
+                        systemImage: "arrow.up.right.square",
+                        kind: wallpaperExtension.availability == .ready
+                            && wallpaperExtension.lockScreenState == .notSet ? .primary : .secondary,
+                        isEnabled: wallpaperExtension.availability == .ready,
+                        identifier: "settings.lockscreen.openSettings"
+                    ) {
+                        wallpaperExtension.openWallpaperSettings()
+                    }
+                }
+
+                if let video = wallpaperExtension.lockScreenVideoTitle {
+                    SettingsDivider()
+
+                    SettingsValueRow(
+                        title: L("settings.lockscreen.video"),
+                        value: video,
+                        monospaced: false
+                    )
+                }
+
+                SettingsDivider()
+
+                SettingsHintRow(text: L("settings.lockscreen.hint"))
+            }
+        }
+    }
+
+    private var lockScreenTitle: String {
+        guard wallpaperExtension.availability == .ready else {
+            return L("settings.lockscreen.state.unavailable")
+        }
+
+        switch wallpaperExtension.lockScreenState {
+        case .notSet:
+            return L("settings.lockscreen.state.notSet")
+        case .partial(let active, let total):
+            return L("settings.lockscreen.state.partial", active, total)
+        case .active:
+            return L("settings.lockscreen.state.active")
+        }
+    }
+
+    private var lockScreenSubtitle: String {
+        guard wallpaperExtension.availability == .ready else {
+            return L("settings.lockscreen.state.unavailable.subtitle")
+        }
+
+        switch wallpaperExtension.lockScreenState {
+        case .notSet:
+            return L("settings.lockscreen.state.notSet.subtitle")
+        case .partial:
+            return L("settings.lockscreen.state.partial.subtitle")
+        case .active:
+            return L("settings.lockscreen.state.active.subtitle")
         }
     }
 

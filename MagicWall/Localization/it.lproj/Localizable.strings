@@ -204,6 +204,20 @@
 "settings.startup.requiresApproval" = "Elemento di login registrato: richiede approvazione in Impostazioni di Sistema.";
 "settings.startup.openSystemSettings" = "Apri Impostazioni di Sistema → Elementi login";
 
+/* Impostazioni — schermata di blocco */
+"settings.lockscreen.title" = "Schermata di blocco";
+"settings.lockscreen.state.active" = "MagicWall è il tuo salvaschermo";
+"settings.lockscreen.state.active.subtitle" = "La schermata di blocco riproduce i video di questa libreria.";
+"settings.lockscreen.state.partial" = "Attivo su %d di %d schermi";
+"settings.lockscreen.state.partial.subtitle" = "Scegli MagicWall anche per gli schermi rimanenti in Impostazioni di Sistema.";
+"settings.lockscreen.state.notSet" = "La schermata di blocco è ancora statica";
+"settings.lockscreen.state.notSet.subtitle" = "Scegli MagicWall in “Salvaschermo…” per animarla.";
+"settings.lockscreen.state.unavailable" = "Estensione wallpaper non disponibile";
+"settings.lockscreen.state.unavailable.subtitle" = "Questa build non può animare la schermata di blocco.";
+"settings.lockscreen.video" = "Video sulla schermata di blocco";
+"settings.lockscreen.openSettings" = "Apri Impostazioni → Sfondo";
+"settings.lockscreen.hint" = "La schermata di blocco è disegnata da macOS, quindi si sceglie in Impostazioni di Sistema → Sfondo → “Salvaschermo…”. L’estensione si mette in pausa quando non è il salvaschermo attivo, quindi in background non consuma nulla. Il desktop continua a essere gestito da MagicWall qui.";
+
 /* Impostazioni — libreria */
 "settings.library.title" = "Libreria";
 "settings.library.videos" = "Video";

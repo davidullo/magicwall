@@ -204,6 +204,20 @@
 "settings.startup.requiresApproval" = "Login item registered: it needs approval in System Settings.";
 "settings.startup.openSystemSettings" = "Open System Settings → Login Items";
 
+/* Settings — lock screen */
+"settings.lockscreen.title" = "Lock screen";
+"settings.lockscreen.state.active" = "MagicWall is your screen saver";
+"settings.lockscreen.state.active.subtitle" = "Your lock screen plays this library's videos.";
+"settings.lockscreen.state.partial" = "Active on %d of %d displays";
+"settings.lockscreen.state.partial.subtitle" = "Choose MagicWall for the remaining displays in System Settings.";
+"settings.lockscreen.state.notSet" = "The lock screen is still static";
+"settings.lockscreen.state.notSet.subtitle" = "Choose MagicWall under “Screen Saver…” to bring it to life.";
+"settings.lockscreen.state.unavailable" = "Wallpaper extension not available";
+"settings.lockscreen.state.unavailable.subtitle" = "This build cannot animate the lock screen.";
+"settings.lockscreen.video" = "Lock screen video";
+"settings.lockscreen.openSettings" = "Open Settings → Wallpaper";
+"settings.lockscreen.hint" = "The lock screen is drawn by macOS, so it is chosen in System Settings → Wallpaper → “Screen Saver…”. The extension pauses itself whenever it is not the active screen saver, so it costs nothing in the background. Desktops keep being handled by MagicWall here.";
+
 /* Settings — library */
 "settings.library.title" = "Library";
 "settings.library.videos" = "Videos";

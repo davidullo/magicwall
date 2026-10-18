@@ -11,6 +11,7 @@ struct MagicWallApp: App {
     @StateObject private var themeStore = ThemeStore()
     @StateObject private var localization = LocalizationManager.shared
     @StateObject private var updater = UpdaterController()
+    @StateObject private var wallpaperExtensionService: WallpaperExtensionService
 
     init() {
         let environment = AppEnvironment.bootstrap()
@@ -26,7 +27,14 @@ struct MagicWallApp: App {
         }
         _starterService = StateObject(wrappedValue: starterService)
 
+        // Lock screen: the same library, mirrored into the wallpaper
+        // extension's sandbox container and watched back from the system store.
+        let wallpaperExtensionService = WallpaperExtensionService(repository: environment.repository)
+        wallpaperExtensionService.track(environment.viewModel.$videos)
+        _wallpaperExtensionService = StateObject(wrappedValue: wallpaperExtensionService)
+
         AppDelegate.engine = environment.engine
+        AppDelegate.wallpaperExtension = wallpaperExtensionService
     }
 
     var body: some Scene {
@@ -77,6 +85,7 @@ struct MagicWallApp: App {
                 .environmentObject(engine)
                 .environmentObject(starterService)
                 .environmentObject(loginItemService)
+                .environmentObject(wallpaperExtensionService)
                 .environmentObject(themeStore)
                 .environmentObject(localization)
                 .environmentObject(updater)
@@ -110,6 +119,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Set at launch so termination can shut the engine down cleanly.
     static weak var engine: WallpaperEngine?
 
+    /// Set at launch so the lock screen mirror is refreshed even when the
+    /// library window never appears (login item, menu-bar only launch).
+    static weak var wallpaperExtension: WallpaperExtensionService?
+
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         false
     }
@@ -120,6 +133,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// main window's `.task` keeps calling it harmlessly.
     func applicationDidFinishLaunching(_ notification: Notification) {
         AppDelegate.engine?.start()
+        AppDelegate.wallpaperExtension?.startLibrarySync()
     }
 
     /// macOS calls this when the app is activated while running — typically a

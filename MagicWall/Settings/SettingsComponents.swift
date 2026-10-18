@@ -199,6 +199,31 @@ struct SettingsValueRow: View {
     }
 }
 
+/// Informational row: symbol plus secondary copy, no control. Carries the
+/// sentence of context a setting needs that a subtitle alone cannot.
+struct SettingsHintRow: View {
+    let text: String
+    var systemImage = "info.circle"
+
+    @EnvironmentObject private var theme: ThemeStore
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 7) {
+            Image(systemName: systemImage)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(theme.active.textTertiaryColor)
+
+            Text(text)
+                .font(.system(size: 11))
+                .foregroundStyle(theme.active.textSecondaryColor)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Spacer(minLength: 0)
+        }
+        .padding(.vertical, 9)
+    }
+}
+
 /// Small section label used above free-standing groups (preview, colors).
 struct SettingsSubheader: View {
     let title: String
@@ -246,12 +271,24 @@ struct SettingsActionButton: View {
     var systemImage: String?
     var kind: Kind = .secondary
     var isEnabled = true
+    /// Applied to the button itself, not to the wrapper: UI tests look up
+    /// `SettingsActionButton`s by identifier, and a container identifier does
+    /// not reach the button element.
+    var identifier: String?
     let action: () -> Void
 
     @EnvironmentObject private var theme: ThemeStore
     @State private var isHovering = false
 
     var body: some View {
+        if let identifier {
+            button.accessibilityIdentifier(identifier)
+        } else {
+            button
+        }
+    }
+
+    private var button: some View {
         Button(action: action) {
             HStack(spacing: 6) {
                 if let systemImage {
