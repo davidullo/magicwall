@@ -149,6 +149,7 @@ xcodebuild \
     -quiet \
     MARKETING_VERSION="$VERSION" \
     CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
+    CODE_SIGN_INJECT_BASE_ENTITLEMENTS=NO \
     ${ARCH_ARGS[@]+"${ARCH_ARGS[@]}"} \
     ${SIGN_ARGS[@]+"${SIGN_ARGS[@]}"} \
     build
@@ -195,7 +196,21 @@ if [[ "$SIGN_IDENTITY" != "-" && -d "$SPARKLE_FW" ]]; then
         fi
     done
 
-    codesign --force --options runtime --timestamp --sign "$SIGN_IDENTITY" "$SPARKLE_FW"
+codesign --force --options runtime --timestamp --sign "$SIGN_IDENTITY" "$SPARKLE_FW"
+fi
+
+# Embedded extensions carry the right identity but no secure timestamp when the
+# build signs them, and Xcode's base entitlements would leave get-task-allow in
+# the signature — the notary service rejects both. Re-sign every appex keeping
+# its own entitlements (the sandbox), before the app that contains it.
+EXTENSIONS_DIR="$APP/Contents/Extensions"
+if [[ "$SIGN_IDENTITY" != "-" && -d "$EXTENSIONS_DIR" ]]; then
+    for appex in "$EXTENSIONS_DIR"/*.appex; do
+        [[ -e "$appex" ]] || continue
+        codesign --force --options runtime --timestamp \
+            --preserve-metadata=entitlements \
+            --sign "$SIGN_IDENTITY" "$appex"
+    done
 fi
 
 codesign --force --options runtime --sign "$SIGN_IDENTITY" "$APP"

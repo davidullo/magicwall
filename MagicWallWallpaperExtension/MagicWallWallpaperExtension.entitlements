@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- The extension must stay sandboxed: it reads the library from its own
+	     container, which is exactly the path the app mirrors the videos into.
+	     Kept as an explicit file so the release build (which disables Xcode's
+	     base-entitlement injection to avoid get-task-allow) still gets the
+	     sandbox, and so notarization sees nothing but this. -->
+	<key>com.apple.security.app-sandbox</key>
+	<true/>
+</dict>
+</plist>
