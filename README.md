@@ -39,6 +39,12 @@ Requires **macOS 15 or later**. Builds are universal (Apple Silicon and Intel).
   actions (play, rename, favorites, categories).
 - **Multi-monitor** — a different video for each display; assignments survive
   restarts and are restored automatically.
+- **Lock screen** (macOS 26+) — MagicWall ships a wallpaper extension, so macOS
+  itself can play your library on the lock screen, with the native unlock
+  transition and no grey flash. Pick MagicWall under "Screen Saver…" in System
+  Settings → Wallpaper; Settings → General shows whether it is active and takes
+  you straight to that pane. On macOS 15–25 the extension is simply never
+  loaded and the app animates the desktop only.
 - **Favorites rotation** — auto-swap your favorite wallpapers every 1–60
   minutes: the same clip on every display, or a different one per display;
   every favorite is shown once per cycle before repeating.
@@ -88,6 +94,8 @@ Requires **macOS 15 or later**. Builds are universal (Apple Silicon and Intel).
 - **M4** (hardening/release): ✅ power policy, E2E tests, themes, i18n,
   Developer ID signing + Apple notarization, Sparkle auto-updates, release
   script; ⏳ HEVC transcode (todo)
+- **Lock screen** (macOS 26+): ✅ `com.apple.wallpaper` provider extension,
+  library mirror into the extension container, status card in Settings → General
 - **M5** (community): future
 
 ## 🖥️ Requirements
@@ -95,6 +103,8 @@ Requires **macOS 15 or later**. Builds are universal (Apple Silicon and Intel).
 **To use the app**
 
 - macOS 15 or later (developed and tested on macOS 27)
+- for the lock screen wallpaper: macOS 26 or later — on older systems the
+  extension is ignored and the app animates the desktop only
 
 **To build**
 
@@ -217,7 +227,11 @@ MagicWall/                    app target (SwiftUI, not sandboxed)
 │                             PlaybackPolicy: battery/lock/thermal/occlusion/wake)
 ├── MenuBar/                  menu bar extra
 ├── Settings/                 settings window
-└── Services/                 login item (SMAppService)
+└── Services/                 login item (SMAppService), library mirror + lock screen status
+
+MagicWallWallpaperExtension/  ExtensionKit extension (macOS 26+, sandboxed):
+                              provider for com.apple.wallpaper — desktop and
+                              lock screen through macOS's own pipeline
 
 Packages/MagicWallCore/       shared, testable logic
 ├── Models/                   Video, VideoCategory, Playlist, ScreenAssignment
@@ -234,6 +248,19 @@ Finder icons live at `kCGDesktopWindowLevel + 20`), driven by `AVQueuePlayer` +
 persisted in the database (`screen_assignments`, key `display:<CGDirectDisplayID>`)
 and restored on every launch.
 
+### Lock screen wallpaper (macOS 26+)
+
+The lock screen is drawn by the system's `WallpaperAgent`, outside the reach of
+any app window, so the only way in is to be one of its providers.
+`MagicWallWallpaperExtension` is an ExtensionKit extension for the
+`com.apple.wallpaper` extension point: it renders through the private
+`WallpaperExtensionKit` framework (loaded at runtime, never linked) and serves
+the same library, mirrored by the app into the extension's sandbox container
+with hard links — the videos are never duplicated on disk. Because it relies on
+private APIs, MagicWall ships as a notarized Developer ID download and is **not**
+Mac App Store material. The extension is inert unless it is the selected screen
+saver, and macOS 15–25 never loads it at all.
+
 ### Window lifecycle
 
 Closing the window does **not** quit the app: the engine keeps running so the
@@ -249,6 +276,13 @@ the menu bar) recreates the window — see `MagicWall/App/MainWindow.swift`.
     ├── Videos/<uuid>.<ext>
     └── Posters/<uuid>.jpg
 ```
+
+On macOS 26+ the app also mirrors the videos into the wallpaper extension's
+sandbox container, `~/Library/Containers/app.magicwall.wallpaper-extension/Data/Documents/videos/`,
+so the system can play them on the lock screen. The files there are hard links
+to the ones above: they take no extra space, and removing them is harmless —
+they are recreated on the next launch. Deleting a video in MagicWall removes
+its copy too.
 
 The app keeps your data on your Mac: no accounts, no telemetry. The only
 network request is the update check against the official GitHub releases,
