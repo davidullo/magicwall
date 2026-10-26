@@ -39,23 +39,22 @@ struct MagicWallApp: App {
 
     var body: some Scene {
         WindowGroup("MagicWall", id: MainWindow.sceneID) {
-            MainWindowRoot {
-                ContentView()
-                    .environmentObject(viewModel)
-                    .environmentObject(engine)
-                    .environmentObject(starterService)
-                    .environmentObject(themeStore)
-                    .environmentObject(localization)
-                    .environmentObject(updater)
-                    .id(localization.language)
-                    .task {
-                        engine.start()
-                        viewModel.refresh()
-                        if let warning = viewModel.startupWarnings.first {
-                            viewModel.statusMessage = warning
-                        }
+            ContentView()
+                .environmentObject(viewModel)
+                .environmentObject(engine)
+                .environmentObject(starterService)
+                .environmentObject(themeStore)
+                .environmentObject(localization)
+                .environmentObject(updater)
+                .id(localization.language)
+                .modifier(MainWindowActionInstaller())
+                .task {
+                    engine.start()
+                    viewModel.refresh()
+                    if let warning = viewModel.startupWarnings.first {
+                        viewModel.statusMessage = warning
                     }
-            }
+                }
         }
         .defaultSize(width: 1180, height: 780)
         .commands {
@@ -77,6 +76,10 @@ struct MagicWallApp: App {
         } label: {
             MenuBarLabel()
                 .environmentObject(engine)
+                // A login-item launch never creates the WindowGroup, so its
+                // content cannot install `MainWindow`'s open action. The menu
+                // bar label always exists, even before the first window.
+                .modifier(MainWindowActionInstaller())
         }
 
         Settings {
@@ -96,21 +99,21 @@ struct MagicWallApp: App {
 
 /// Captures the scene's `openWindow` action for `MainWindow`, so the window can
 /// be recreated after the user closes it with the red button (the app keeps
-/// running for the wallpaper engine).
-private struct MainWindowRoot<Content: View>: View {
+/// running for the wallpaper engine) or after a login-item launch, where
+/// SwiftUI starts the app without creating the `WindowGroup` at all.
+///
+/// Apply it to every long-lived scene, in particular the menu bar label: the
+/// window content only exists while the window does, so it cannot install the
+/// action in the login-item case.
+private struct MainWindowActionInstaller: ViewModifier {
     @Environment(\.openWindow) private var openWindow
 
-    let content: Content
-
-    init(@ViewBuilder content: () -> Content) {
-        self.content = content()
-    }
-
-    var body: some View {
-        content
-            .onAppear {
-                MainWindow.openAction = { openWindow(id: MainWindow.sceneID) }
+    func body(content: Content) -> some View {
+        content.onAppear {
+            MainWindow.installOpenAction {
+                openWindow(id: MainWindow.sceneID)
             }
+        }
     }
 }
 
@@ -142,9 +145,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     ///
     /// `hasVisibleWindows` is ignored on purpose: the wallpaper desktop windows
     /// count as visible, so the flag is true even when the library window is
-    /// gone. `MainWindow.present()` decides what to do.
+    /// gone. `MainWindow.handleReopen()` decides what to do.
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
-        MainWindow.present()
+        MainWindow.handleReopen()
         return true
     }
 
