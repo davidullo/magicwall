@@ -223,6 +223,35 @@ if [[ "$NEW_VERSION" != "$VERSION" || "$NEW_BUILD" != "$BUILD_NUMBER" ]]; then
     exit 1
 fi
 
+# --------------------------------------------------------------- web site
+
+# Vercel deploys `site/` from main. Keep the server-rendered release
+# placeholders in sync and invalidate the GitHub-release session cache so
+# visitors do not keep seeing the previous version after a release.
+SITE_INDEX="$ROOT/site/index.html"
+SITE_JS="$ROOT/site/scripts/main.js"
+if [[ -f "$SITE_INDEX" ]]; then
+    echo "▸ Updating site release placeholders…"
+    ESCAPED_CURRENT="${CURRENT_VERSION//./\\.}"
+    sed -i '' -E \
+        -e "s/v${ESCAPED_CURRENT}([[:space:]]*·)/v$VERSION\1/g" \
+        -e "s/MagicWall-${ESCAPED_CURRENT}\.dmg/MagicWall-$VERSION.dmg/g" \
+        "$SITE_INDEX"
+
+    if ! grep -q "v$VERSION" "$SITE_INDEX"; then
+        echo "⚠ site/index.html does not mention v$VERSION; update it manually." >&2
+    fi
+fi
+
+if [[ -f "$SITE_JS" ]]; then
+    KEY_VERSION="$(sed -n "s/.*const RELEASE_KEY = 'mw:release:v\([0-9][0-9]*\)';.*/\1/p" "$SITE_JS" | head -1)"
+    if [[ -n "$KEY_VERSION" ]]; then
+        sed -i '' -E \
+            "s/const RELEASE_KEY = 'mw:release:v[0-9]+';/const RELEASE_KEY = 'mw:release:v$((KEY_VERSION + 1))';/" \
+            "$SITE_JS"
+    fi
+fi
+
 # ------------------------------------------------------------------- tests
 
 if [[ "$RUN_TESTS" -eq 1 ]]; then
@@ -283,6 +312,24 @@ if [[ "$PUBLISH" -eq 1 ]]; then
     fi
 
     echo "  feed OK: appcast.xml exposes build $BUILD_NUMBER with a signature"
+
+    SITE_URL="https://magicwall.davide.fyi/"
+    echo "▸ Verifying the marketing site…"
+    SITE_OK=0
+    for attempt in 1 2 3 4 5 6 7 8 9 10; do
+        if curl -fsSL "$SITE_URL" 2>/dev/null | grep -q "v$VERSION"; then
+            SITE_OK=1
+            break
+        fi
+        sleep 3
+    done
+    if [[ "$SITE_OK" -eq 1 ]]; then
+        echo "  site OK: serving v$VERSION"
+    else
+        echo "⚠ The live site does not show v$VERSION yet." >&2
+        echo "  If the Vercel Git deploy has not run, publish it with:" >&2
+        echo "    (cd site && vercel deploy --prod)" >&2
+    fi
     echo
 
     cat <<EOF

@@ -13,7 +13,7 @@
 
   /** Latest release — GitHub API behind a 5-minute sessionStorage cache.
       Bump RELEASE_KEY when a stale cached payload must be invalidated. */
-  const RELEASE_KEY = 'mw:release:v2';
+  const RELEASE_KEY = 'mw:release:v3';
   const RELEASE_TTL = 5 * 60 * 1000;
   const RELEASE_API = 'https://api.github.com/repos/davidullo/magicwall/releases/latest';
   const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
