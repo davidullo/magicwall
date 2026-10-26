@@ -137,8 +137,8 @@ cd Packages/MagicWallCore && swift test
 ## 📦 Release
 
 One command does the whole release — version bump, tests, commit + push,
-universal build, Developer ID signing, notarization, DMG/ZIP/dSYM, signed
-appcast, GitHub release and feed verification:
+site placeholder sync, universal build, Developer ID signing, notarization,
+DMG/ZIP/dSYM, signed appcast, GitHub release and feed verification:
 
 ```bash
 ./Scripts/publish            # next patch: 0.2.0 → 0.2.1
@@ -155,6 +155,10 @@ and the build number is the current one plus one. Without `--yes` the release
 starts after a short countdown, so a wrong invocation can be aborted with
 Ctrl-C. Partial runs: `--skip-tests`, `--with-e2e`, `--no-publish`,
 `--no-push`, `--no-commit`, `--build N`.
+
+The script also updates the version placeholders in `site/` and invalidates
+the landing page's release cache. Vercel redeploys the site automatically from
+the push to `main`, and the release verifies the live page afterwards.
 
 For a local build only (no git, no publishing):
 

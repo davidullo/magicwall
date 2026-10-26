@@ -117,7 +117,12 @@ The social card is rendered from `tools/og.html` with headless Chrome:
 ## Deploy
 
 The Vercel project has this folder as its **root directory**, so a deploy ships exactly
-the files above:
+the files above. It is linked to the GitHub repo: every push to `main` deploys `site/`
+automatically. `Scripts/publish` keeps the release placeholders in `index.html` in sync
+and bumps `RELEASE_KEY` in `scripts/main.js` to invalidate the page's release cache, so
+a normal release needs no manual site step.
+
+Manual production deploys are still available:
 
 ```bash
 vercel deploy --prod      # from site/
